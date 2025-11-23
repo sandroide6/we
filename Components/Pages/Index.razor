@@ -95,7 +95,7 @@
                 <div class="total-preview">
                     <strong>Total:</strong>
                     <span class="total-amount">
-                        $@(productoPersonalizar.PrecioBase + especificacionesSeleccionadas.Sum(e => e.PrecioAdicional)).ToString("N2")
+                        $@((productoPersonalizar.PrecioBase + especificacionesSeleccionadas.Sum(e => e.PrecioAdicional)).ToString("N2"))
                     </span>
                 </div>
             </div>
@@ -133,6 +133,7 @@
     private void AgregarAlCarrito(ProductoTecnologico producto)
     {
         EstadoPedido.AgregarProducto(producto);
+        StateHasChanged();
     }
 
     private void MostrarPersonalizacion(ProductoTecnologico producto)
@@ -175,6 +176,7 @@
             
             EstadoPedido.AgregarItem(item);
             CerrarPersonalizacion();
+            StateHasChanged();
         }
     }
 }

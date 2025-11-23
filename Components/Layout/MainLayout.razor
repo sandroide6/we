@@ -66,11 +66,24 @@
     protected override void OnInitialized()
     {
         NavigationManager.LocationChanged += LocationChanged;
+        EstadoPedido.OnCarritoActualizado += CarritoActualizado;
     }
 
     private void LocationChanged(object? sender, LocationChangedEventArgs e)
     {
         StateHasChanged();
+    }
+
+    private void CarritoActualizado()
+    {
+        try
+        {
+            StateHasChanged();
+        }
+        catch
+        {
+            // Ignorar errores de Dispatcher
+        }
     }
 
     private bool IsActive(string path)
