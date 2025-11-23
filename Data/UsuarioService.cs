@@ -9,6 +9,7 @@ public class UsuarioService
 {
     private readonly TechStoreContext _dbContext;
     public Usuario? UsuarioActual { get; set; }
+    public event Action? OnUsuarioChanged;
 
     public UsuarioService(TechStoreContext dbContext)
     {
@@ -40,6 +41,7 @@ public class UsuarioService
         await _dbContext.SaveChangesAsync();
 
         UsuarioActual = usuario;
+        NotifyUsuarioChanged();
         return (true, "Registro exitoso");
     }
 
@@ -58,12 +60,14 @@ public class UsuarioService
         await _dbContext.SaveChangesAsync();
 
         UsuarioActual = usuario;
+        NotifyUsuarioChanged();
         return (true, "Login exitoso");
     }
 
     public async Task LogoutAsync()
     {
         UsuarioActual = null;
+        NotifyUsuarioChanged();
         await Task.CompletedTask;
     }
 
@@ -87,7 +91,13 @@ public class UsuarioService
 
         await _dbContext.SaveChangesAsync();
         UsuarioActual = usuario;
+        NotifyUsuarioChanged();
         return true;
+    }
+
+    private void NotifyUsuarioChanged()
+    {
+        OnUsuarioChanged?.Invoke();
     }
 
     public async Task<bool> CambiarContraseñaAsync(int id, string contraseñaActual, string contraseñaNueva, string contraseñaConfirm)
