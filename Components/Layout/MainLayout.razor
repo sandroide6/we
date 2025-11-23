@@ -40,10 +40,17 @@
                     </div>
                 }
 
-                <div class="cart-summary" @onclick="NavigateToCheckout">
+                <div class="cart-summary @(EstadoPedido.Items.Count == 0 ? "cart-empty" : "")" @onclick="NavigateToCheckout">
                     <span class="cart-icon">🛒</span>
-                    <span class="cart-count">@EstadoPedido.Items.Count</span>
-                    <span class="cart-total">$@EstadoPedido.PrecioTotal.ToString("N2")</span>
+                    @if (EstadoPedido.Items.Count > 0)
+                    {
+                        <span class="cart-count">@EstadoPedido.Items.Count</span>
+                        <span class="cart-total">$@EstadoPedido.PrecioTotal.ToString("N2")</span>
+                    }
+                    else
+                    {
+                        <span style="color: rgba(255,255,255,0.5); font-size: 0.9rem;">Vacío</span>
+                    }
                 </div>
             </div>
         </div>
@@ -63,6 +70,12 @@
 </div>
 
 @code {
+    protected override void OnAfterRender(bool firstRender)
+    {
+        // Re-render whenever this component renders to keep cart updated
+        StateHasChanged();
+    }
+
     private bool IsActive(string path)
     {
         return NavigationManager.Uri.EndsWith(path);

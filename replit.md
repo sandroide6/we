@@ -309,6 +309,14 @@ La aplicación estará disponible en: `http://0.0.0.0:5000`
   - Vinculación de órdenes a usuarios
 - **Protección de Rutas**: Checkout y "Mis Pedidos" ahora requieren autenticación
 - **Menú de Usuario**: Dropdown en header que muestra opciones cuando se está logueado
+- **Base de Datos**: Tabla Usuarios se crea correctamente con todas las relaciones
+- **Navbar Mejorado**: Rediseñado con estilos modernos, gradientes cyan, mejor espaciado y efectos hover mejorados
+- **Carrito Reactivo**: Sistema de carrito actualizado con:
+  - Visualización en tiempo real del contador de items
+  - Muestra clara del total en el header
+  - Estado visual "Vacío" cuando no hay productos
+  - Efectos hover elegantes
+  - Integración perfecta con el layout
 
 ### Performance
 - Una sola consulta batch para cargar especificaciones en checkout
