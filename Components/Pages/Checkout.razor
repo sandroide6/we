@@ -158,19 +158,48 @@
     {
         procesando = true;
 
+        // Cargar los productos y especificaciones desde la base de datos
+        var productosIds = EstadoPedido.Items.Select(i => i.ProductoTecnologicoId).Distinct().ToList();
         var especIds = EstadoPedido.Items
             .SelectMany(i => i.EspecificacionesSeleccionadas)
             .Select(e => e.EspecificacionId)
             .Distinct()
             .ToList();
         
-        var especificacionesList = await DbContext.Especificaciones
+        var productosDb = await DbContext.ProductosTecnologicos
+            .Where(p => productosIds.Contains(p.Id))
+            .ToDictionaryAsync(p => p.Id);
+            
+        var especificacionesDb = await DbContext.Especificaciones
             .Where(e => especIds.Contains(e.Id))
-            .ToListAsync();
-        var especificacionesDb = especificacionesList.ToDictionary(e => e.Id);
+            .ToDictionaryAsync(e => e.Id);
 
         orden.FechaCreacion = DateTime.Now;
         orden.UsuarioId = UsuarioService.UsuarioActual?.Id;
+        
+        // Crear una copia del pedido con todos los datos cargados para WhatsApp
+        var ordenParaWhatsApp = new Orden
+        {
+            NombreCliente = orden.NombreCliente,
+            EmailCliente = orden.EmailCliente,
+            DireccionEntrega = orden.DireccionEntrega,
+            FechaCreacion = orden.FechaCreacion,
+            Items = EstadoPedido.Items.Select(item => new ItemOrden
+            {
+                ProductoTecnologicoId = item.ProductoTecnologicoId,
+                ProductoTecnologico = productosDb.GetValueOrDefault(item.ProductoTecnologicoId),
+                Cantidad = item.Cantidad,
+                PrecioBaseProducto = item.PrecioBaseProducto,
+                EspecificacionesSeleccionadas = item.EspecificacionesSeleccionadas.Select(spec => new EspecificacionOrden
+                {
+                    EspecificacionId = spec.EspecificacionId,
+                    Especificacion = especificacionesDb.GetValueOrDefault(spec.EspecificacionId),
+                    PrecioEspecificacion = spec.PrecioEspecificacion
+                }).ToList()
+            }).ToList()
+        };
+
+        // Crear items para guardar en la base de datos (sin referencias de navegación)
         orden.Items = EstadoPedido.Items.Select(item => new ItemOrden
         {
             ProductoTecnologicoId = item.ProductoTecnologicoId,
@@ -179,7 +208,6 @@
             EspecificacionesSeleccionadas = item.EspecificacionesSeleccionadas.Select(spec => new EspecificacionOrden
             {
                 EspecificacionId = spec.EspecificacionId,
-                Especificacion = especificacionesDb.GetValueOrDefault(spec.EspecificacionId),
                 PrecioEspecificacion = spec.PrecioEspecificacion
             }).ToList()
         }).ToList();
@@ -187,9 +215,62 @@
         DbContext.Ordenes.Add(orden);
         await DbContext.SaveChangesAsync();
 
+        // Generar mensaje de WhatsApp con detalles del pedido
+        var mensajeWhatsApp = GenerarMensajeWhatsApp(ordenParaWhatsApp);
+        var numeroWhatsApp = "573003895839"; // Formato internacional de Colombia
+        var urlWhatsApp = $"https://wa.me/{numeroWhatsApp}?text={Uri.EscapeDataString(mensajeWhatsApp)}";
+
         EstadoPedido.LimpiarCarrito();
         
         procesando = false;
-        NavigationManager.NavigateTo("/mis-pedidos");
+        
+        // Redirigir a WhatsApp
+        NavigationManager.NavigateTo(urlWhatsApp, true);
+    }
+
+    private string GenerarMensajeWhatsApp(Orden orden)
+    {
+        var mensaje = $"¡Hola! 👋 Acabo de realizar un pedido en TechStore\n\n";
+        mensaje += $"📋 *Detalles del Pedido*\n";
+        mensaje += $"━━━━━━━━━━━━━━━━\n";
+        mensaje += $"👤 Cliente: {orden.NombreCliente}\n";
+        mensaje += $"📧 Email: {orden.EmailCliente}\n";
+        mensaje += $"📍 Dirección: {orden.DireccionEntrega}\n\n";
+        
+        mensaje += $"🛒 *Productos:*\n";
+        var numeroItem = 1;
+        decimal totalPedido = 0;
+        
+        foreach (var item in orden.Items)
+        {
+            var nombreProducto = item.ProductoTecnologico?.Nombre ?? "Producto";
+            var subtotalItem = item.PrecioBaseProducto + item.EspecificacionesSeleccionadas.Sum(e => e.PrecioEspecificacion);
+            var totalItem = subtotalItem * item.Cantidad;
+            totalPedido += totalItem;
+            
+            mensaje += $"\n{numeroItem}. {nombreProducto}\n";
+            mensaje += $"   • Cantidad: {item.Cantidad}\n";
+            mensaje += $"   • Precio base: {item.PrecioBaseProducto.ToString("C2")}\n";
+            
+            if (item.EspecificacionesSeleccionadas.Any())
+            {
+                mensaje += $"   • Especificaciones:\n";
+                foreach (var spec in item.EspecificacionesSeleccionadas)
+                {
+                    var nombreSpec = spec.Especificacion?.Nombre ?? "Especificación";
+                    mensaje += $"     - {nombreSpec} ({spec.PrecioEspecificacion.ToString("C2")})\n";
+                }
+            }
+            
+            mensaje += $"   • Subtotal: {totalItem.ToString("C2")}\n";
+            numeroItem++;
+        }
+        
+        mensaje += $"\n━━━━━━━━━━━━━━━━\n";
+        mensaje += $"💰 *TOTAL: {totalPedido.ToString("C2")}*\n\n";
+        mensaje += $"Pedido realizado el {orden.FechaCreacion.ToString("dd/MM/yyyy HH:mm")}\n\n";
+        mensaje += $"Espero su confirmación. ¡Gracias! 😊";
+        
+        return mensaje;
     }
 }
