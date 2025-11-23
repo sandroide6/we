@@ -18,15 +18,6 @@
     }
 }
 
-@keyframes shimmer {
-    0% {
-        background-position: -1000px 0;
-    }
-    100% {
-        background-position: 1000px 0;
-    }
-}
-
 .page {
     min-height: 100vh;
     display: flex;
@@ -34,14 +25,13 @@
 }
 
 .top-bar {
-    background: linear-gradient(135deg, #0f172a 0%, #1a2847 50%, #1e293b 100%);
+    background: linear-gradient(to right, #0f172a, #1e293b);
     padding: 1.2rem 0;
-    box-shadow: 0 10px 40px rgba(6, 182, 212, 0.25), 0 0 30px rgba(6, 182, 212, 0.1);
+    box-shadow: 0 10px 40px rgba(6, 182, 212, 0.3);
     position: sticky;
     top: 0;
     z-index: 100;
-    border-bottom: 1px solid rgba(6, 182, 212, 0.3);
-    backdrop-filter: blur(10px);
+    border-bottom: 2px solid #06b6d4;
     animation: fadeInDown 0.6s ease-out;
 }
 
@@ -58,56 +48,23 @@
     align-items: center;
     gap: 0.75rem;
     text-decoration: none;
-    background: linear-gradient(135deg, #06b6d4, #8b5cf6);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: #06b6d4;
     font-weight: 900;
-    font-size: 1.9rem;
-    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    font-size: 1.8rem;
+    transition: all 0.3s ease;
     flex-shrink: 0;
-    letter-spacing: -0.5px;
-    position: relative;
-}
-
-.logo::before {
-    content: '';
-    position: absolute;
-    inset: -8px;
-    background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(139, 92, 246, 0.1));
-    border-radius: 1rem;
-    opacity: 0;
-    transition: opacity 0.4s;
-    z-index: -1;
 }
 
 .logo:hover {
-    transform: scale(1.12) translateY(-2px);
-    filter: brightness(1.3) drop-shadow(0 0 20px rgba(6, 182, 212, 0.5));
-}
-
-.logo:hover::before {
-    opacity: 1;
+    color: #8b5cf6;
+    transform: scale(1.1);
+    text-shadow: 0 0 20px rgba(6, 182, 212, 0.6);
 }
 
 .logo-icon {
-    font-size: 2.3rem;
+    font-size: 2rem;
     margin-right: 0.25rem;
-    animation: spin 20s linear infinite;
-}
-
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
-.logo:hover .logo-icon {
-    animation: spinFast 10s linear infinite;
-}
-
-@keyframes spinFast {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+    display: inline-block;
 }
 
 .nav-menu {
@@ -122,92 +79,55 @@
     text-decoration: none;
     font-weight: 700;
     padding: 0.7rem 1.5rem;
-    border-radius: 0.9rem;
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    border-radius: 0.8rem;
+    transition: all 0.3s ease;
     border: 2px solid transparent;
     font-size: 0.95rem;
-    position: relative;
-    background: linear-gradient(135deg, rgba(6, 182, 212, 0), rgba(139, 92, 246, 0)) padding-box;
-}
-
-.nav-link::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: 0.9rem;
-    padding: 2px;
-    background: linear-gradient(135deg, rgba(6, 182, 212, 0.3), rgba(139, 92, 246, 0.3));
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    opacity: 0;
-    transition: opacity 0.3s;
 }
 
 .nav-link:hover {
     color: #06b6d4;
-    background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(139, 92, 246, 0.1));
-    border-color: rgba(6, 182, 212, 0.5);
-    transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(6, 182, 212, 0.2);
-}
-
-.nav-link:hover::before {
-    opacity: 1;
+    background: rgba(6, 182, 212, 0.15);
+    border-color: #06b6d4;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px rgba(6, 182, 212, 0.2);
 }
 
 .nav-link.active {
     color: #06b6d4;
-    background: linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(6, 182, 212, 0.08));
+    background: rgba(6, 182, 212, 0.2);
     border-color: #06b6d4;
-    box-shadow: 0 0 20px rgba(6, 182, 212, 0.4), inset 0 0 10px rgba(6, 182, 212, 0.1);
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.4);
 }
 
 .cart-summary {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(139, 92, 246, 0.1));
-    padding: 0.9rem 2rem;
+    gap: 0.8rem;
+    background: linear-gradient(135deg, #06b6d4, #0891b2);
+    padding: 0.9rem 1.8rem;
     border-radius: 50px;
     cursor: pointer;
-    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-    border: 2px solid rgba(6, 182, 212, 0.5);
+    transition: all 0.3s ease;
+    border: none;
     flex-shrink: 0;
     font-weight: 700;
-    position: relative;
-    overflow: hidden;
-}
-
-.cart-summary::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-    transition: left 0.6s;
-}
-
-.cart-summary:hover::before {
-    left: 100%;
+    color: white;
+    box-shadow: 0 8px 20px rgba(6, 182, 212, 0.3);
 }
 
 .cart-summary:hover {
-    background: linear-gradient(135deg, rgba(6, 182, 212, 0.35), rgba(139, 92, 246, 0.2));
-    transform: translateY(-5px) scale(1.02);
-    box-shadow: 0 12px 30px rgba(6, 182, 212, 0.4), 0 0 30px rgba(6, 182, 212, 0.2);
-    border-color: rgba(6, 182, 212, 0.8);
+    transform: translateY(-5px);
+    box-shadow: 0 12px 30px rgba(6, 182, 212, 0.5);
 }
 
 .cart-summary:active {
-    transform: translateY(-3px) scale(0.98);
+    transform: translateY(-2px);
 }
 
 .cart-icon {
     font-size: 1.8rem;
-    transition: transform 0.3s;
+    transition: transform 0.3s ease;
 }
 
 .cart-summary:hover .cart-icon {
@@ -215,75 +135,96 @@
 }
 
 .cart-count {
-    background: linear-gradient(135deg, #06b6d4, #0891b2);
+    background: rgba(255, 255, 255, 0.3);
     color: white;
-    padding: 0.4rem 0.9rem;
+    padding: 0.3rem 0.8rem;
     border-radius: 50px;
     font-weight: 800;
     font-size: 0.85rem;
-    min-width: 32px;
+    min-width: 28px;
     text-align: center;
-    box-shadow: 0 4px 12px rgba(6, 182, 212, 0.4);
     animation: glowPulse 2s ease-in-out infinite;
 }
 
 .cart-total {
-    background: linear-gradient(135deg, #06b6d4, #0891b2);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: white;
     font-weight: 800;
-    font-size: 1.25rem;
-    letter-spacing: -0.5px;
+    font-size: 1.1rem;
 }
 
 .cart-summary.cart-empty {
     opacity: 0.5;
     cursor: not-allowed;
-    border-color: rgba(6, 182, 212, 0.3);
 }
 
 .cart-summary.cart-empty:hover {
     transform: none;
-    box-shadow: 0 8px 20px rgba(6, 182, 212, 0.1);
-    background: linear-gradient(135deg, rgba(6, 182, 212, 0.15), rgba(139, 92, 246, 0.08));
+    box-shadow: 0 8px 15px rgba(6, 182, 212, 0.2);
 }
 
 .top-bar-right {
     display: flex;
     align-items: center;
-    gap: 1.8rem;
+    gap: 1.5rem;
     flex-shrink: 0;
 }
 
 .auth-buttons {
     display: flex;
-    gap: 1rem;
+    gap: 0.8rem;
     align-items: center;
 }
 
-.btn-login-header, .btn-register-header {
-    position: relative;
-    overflow: hidden;
+.btn-login-header {
+    padding: 0.7rem 1.3rem;
+    background: transparent;
+    border: 2px solid #06b6d4;
+    color: white;
+    border-radius: 0.6rem;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    font-size: 0.9rem;
 }
 
-.btn-login-header::before, .btn-register-header::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-    transition: left 0.5s;
+.btn-login-header:hover {
+    background: rgba(6, 182, 212, 0.15);
+    color: #06b6d4;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px rgba(6, 182, 212, 0.2);
 }
 
-.btn-login-header:hover::before, .btn-register-header:hover::before {
-    left: 100%;
+.btn-register-header {
+    padding: 0.7rem 1.3rem;
+    background: linear-gradient(135deg, #06b6d4, #0891b2);
+    border: none;
+    color: white;
+    border-radius: 0.6rem;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    font-size: 0.9rem;
+    box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3);
+}
+
+.btn-register-header:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(6, 182, 212, 0.4);
 }
 
 .user-greeting {
-    animation: fadeInDown 0.6s ease-out 0.1s both;
+    color: rgba(255, 255, 255, 0.9);
+    cursor: pointer;
+    padding: 0.7rem 1.2rem;
+    border-radius: 0.6rem;
+    transition: all 0.3s ease;
+    font-weight: 600;
+}
+
+.user-greeting:hover {
+    background: rgba(6, 182, 212, 0.15);
+    color: #06b6d4;
 }
 
 .main-content {
