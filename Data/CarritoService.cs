@@ -22,7 +22,8 @@ public class CarritoService
             if (string.IsNullOrEmpty(json))
                 return new List<ItemOrden>();
             
-            return JsonSerializer.Deserialize<List<ItemOrden>>(json) ?? new List<ItemOrden>();
+            var dtos = JsonSerializer.Deserialize<List<CarritoItemDTO>>(json) ?? new List<CarritoItemDTO>();
+            return dtos.Select(ConvertirDTOaItemOrden).ToList();
         }
         catch
         {
@@ -66,7 +67,7 @@ public class CarritoService
     public async Task RemoverItem(ItemOrden item)
     {
         var items = await ObtenerItems();
-        var itemARemover = items.FirstOrDefault(i => i.Id == item.Id);
+        var itemARemover = items.FirstOrDefault(i => i.ProductoTecnologicoId == item.ProductoTecnologicoId);
         if (itemARemover != null)
         {
             items.Remove(itemARemover);
@@ -87,7 +88,54 @@ public class CarritoService
 
     private async Task GuardarItems(List<ItemOrden> items)
     {
-        var json = JsonSerializer.Serialize(items);
+        var dtos = items.Select(ConvertirItemOrdenADTO).ToList();
+        var json = JsonSerializer.Serialize(dtos);
         await _js.InvokeVoidAsync("sessionStorage.setItem", CarroStorageKey, json);
+    }
+
+    private static CarritoItemDTO ConvertirItemOrdenADTO(ItemOrden item)
+    {
+        return new CarritoItemDTO
+        {
+            ProductoTecnologicoId = item.ProductoTecnologicoId,
+            ProductoNombre = item.ProductoTecnologico?.Nombre ?? "Producto",
+            ProductoImagen = item.ProductoTecnologico?.ImagenUrl,
+            PrecioBaseProducto = item.PrecioBaseProducto,
+            Cantidad = item.Cantidad,
+            Especificaciones = item.EspecificacionesSeleccionadas.Select(e => new EspecificacionCarritoDTO
+            {
+                EspecificacionId = e.EspecificacionId,
+                Nombre = e.Especificacion?.Nombre,
+                Precio = e.PrecioEspecificacion
+            }).ToList()
+        };
+    }
+
+    private static ItemOrden ConvertirDTOaItemOrden(CarritoItemDTO dto)
+    {
+        return new ItemOrden
+        {
+            ProductoTecnologicoId = dto.ProductoTecnologicoId,
+            ProductoTecnologico = new ProductoTecnologico
+            {
+                Id = dto.ProductoTecnologicoId,
+                Nombre = dto.ProductoNombre ?? "Producto",
+                ImagenUrl = dto.ProductoImagen,
+                PrecioBase = dto.PrecioBaseProducto
+            },
+            Cantidad = dto.Cantidad,
+            PrecioBaseProducto = dto.PrecioBaseProducto,
+            EspecificacionesSeleccionadas = dto.Especificaciones.Select(e => new EspecificacionOrden
+            {
+                EspecificacionId = e.EspecificacionId,
+                Especificacion = new Especificacion
+                {
+                    Id = e.EspecificacionId,
+                    Nombre = e.Nombre ?? "Especificación",
+                    PrecioAdicional = e.Precio
+                },
+                PrecioEspecificacion = e.Precio
+            }).ToList()
+        };
     }
 }

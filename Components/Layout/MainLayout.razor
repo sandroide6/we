@@ -1,7 +1,6 @@
 @inherits LayoutComponentBase
 @inject UsuarioService UsuarioService
 @inject NavigationManager NavigationManager
-@inject IJSRuntime JS
 
 <div class="page">
     <header class="top-bar">
@@ -42,8 +41,8 @@
 
                 <div class="cart-summary" @onclick="NavigateToCheckout">
                     <span class="cart-icon">🛒</span>
-                    <span class="cart-count">@cartCount</span>
-                    <span class="cart-total">$@cartTotal.ToString("N2")</span>
+                    <span class="cart-count">-</span>
+                    <span class="cart-total">Ver Carrito</span>
                 </div>
             </div>
         </div>
@@ -63,43 +62,14 @@
 </div>
 
 @code {
-    private int cartCount = 0;
-    private decimal cartTotal = 0;
-
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         NavigationManager.LocationChanged += LocationChanged;
-        await ActualizarCarrito();
     }
 
     private void LocationChanged(object? sender, LocationChangedEventArgs e)
     {
-        _ = ActualizarCarrito();
-    }
-
-    private async Task ActualizarCarrito()
-    {
-        try
-        {
-            var json = await JS.InvokeAsync<string>("sessionStorage.getItem", "techstore_carro");
-            if (string.IsNullOrEmpty(json))
-            {
-                cartCount = 0;
-                cartTotal = 0;
-                return;
-            }
-
-            var items = System.Text.Json.JsonSerializer.Deserialize<List<ItemOrden>>(json) ?? new();
-            cartCount = items.Count;
-            cartTotal = items.Sum(i => i.PrecioTotal * i.Cantidad);
-            
-            await InvokeAsync(() => StateHasChanged());
-        }
-        catch
-        {
-            cartCount = 0;
-            cartTotal = 0;
-        }
+        StateHasChanged();
     }
 
     private bool IsActive(string path)
@@ -109,16 +79,13 @@
 
     private void NavigateToCheckout()
     {
-        if (cartCount > 0)
+        if (UsuarioService.UsuarioActual == null)
         {
-            if (UsuarioService.UsuarioActual == null)
-            {
-                NavigationManager.NavigateTo("/login");
-            }
-            else
-            {
-                NavigationManager.NavigateTo("/checkout");
-            }
+            NavigationManager.NavigateTo("/login");
+        }
+        else
+        {
+            NavigationManager.NavigateTo("/checkout");
         }
     }
 
