@@ -1,0 +1,52 @@
+@inherits LayoutComponentBase
+@inject EstadoPedido EstadoPedido
+@inject NavigationManager NavigationManager
+
+<div class="page">
+    <header class="top-bar">
+        <div class="container">
+            <a href="/" class="logo">
+                <span class="logo-icon">⚡</span>
+                <span class="logo-text">TechStore</span>
+            </a>
+            
+            <nav class="nav-menu">
+                <a href="/" class="nav-link @(IsActive("/") ? "active" : "")">Catálogo</a>
+                <a href="/mis-pedidos" class="nav-link @(IsActive("/mis-pedidos") ? "active" : "")">Mis Pedidos</a>
+            </nav>
+
+            <div class="cart-summary" @onclick="NavigateToCheckout">
+                <span class="cart-icon">🛒</span>
+                <span class="cart-count">@EstadoPedido.Items.Count</span>
+                <span class="cart-total">$@EstadoPedido.PrecioTotal.ToString("N2")</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+            @Body
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 TechStore - Tu tienda de tecnología de confianza</p>
+        </div>
+    </footer>
+</div>
+
+@code {
+    private bool IsActive(string path)
+    {
+        return NavigationManager.Uri.EndsWith(path);
+    }
+
+    private void NavigateToCheckout()
+    {
+        if (EstadoPedido.Items.Count > 0)
+        {
+            NavigationManager.NavigateTo("/checkout");
+        }
+    }
+}
