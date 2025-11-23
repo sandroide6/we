@@ -127,6 +127,30 @@
     private Orden orden = new();
     private bool procesando = false;
 
+    protected override async Task OnInitializedAsync()
+    {
+        // Recargar productos desde la BD en caso de que estén desconectados
+        var productIds = EstadoPedido.Items
+            .Select(i => i.ProductoTecnologicoId)
+            .Distinct()
+            .ToList();
+
+        if (productIds.Any())
+        {
+            var productosDb = await DbContext.ProductosTecnologicos
+                .Where(p => productIds.Contains(p.Id))
+                .ToDictionaryAsync(p => p.Id);
+
+            foreach (var item in EstadoPedido.Items)
+            {
+                if (item.ProductoTecnologico == null && productosDb.ContainsKey(item.ProductoTecnologicoId))
+                {
+                    item.ProductoTecnologico = productosDb[item.ProductoTecnologicoId];
+                }
+            }
+        }
+    }
+
     private void RemoverItem(ItemOrden item)
     {
         EstadoPedido.RemoverItem(item);
