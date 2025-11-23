@@ -1,78 +1,180 @@
 @page "/"
 @using Microsoft.EntityFrameworkCore
-@using TechStore.Data
-@using TechStore.Models
-@inject PortfolioContext DbContext
+@inject TechStoreContext DbContext
+@inject EstadoPedido EstadoPedido
 @rendermode InteractiveServer
 
-<PageTitle>Mi Portafolio</PageTitle>
+<PageTitle>TechStore - Catálogo de Productos</PageTitle>
 
-<div class="hero">
-    <div class="hero-content">
-        <h1>Hola, soy Desarrollador Full-Stack</h1>
-        <p>Especializado en ASP.NET Core, React y desarrollo de soluciones empresariales</p>
-        <a href="#proyectos" class="btn-hero">Ver mis proyectos</a>
-    </div>
+<div class="catalog-header">
+    <h1>🚀 Bienvenido a TechStore</h1>
+    <p class="subtitle">Descubre los mejores productos de tecnología para tu negocio o proyecto personal</p>
 </div>
 
-<section id="proyectos" class="projects-section">
-    <div class="container">
-        <h2>Mis Proyectos</h2>
-        
-        @if (proyectos == null)
-        {
-            <p>Cargando proyectos...</p>
-        }
-        else if (proyectos.Count == 0)
-        {
-            <p>Sin proyectos aún</p>
-        }
-        else
-        {
-            <div class="projects-grid">
-                @foreach (var proyecto in proyectos)
-                {
-                    <div class="project-card">
-                        <div class="project-image">
-                            <img src="@proyecto.ImagenUrl" alt="@proyecto.Titulo" />
-                        </div>
-                        <div class="project-info">
-                            <h3>@proyecto.Titulo</h3>
-                            <p>@proyecto.Descripcion</p>
-                            <div class="technologies">
-                                @foreach (var tech in proyecto.Tecnologias.Split(","))
-                                {
-                                    <span class="tech-tag">@tech.Trim()</span>
-                                }
-                            </div>
-                            <a href="@proyecto.UrlProyecto" target="_blank" class="btn-project">Ver Proyecto</a>
-                        </div>
-                    </div>
-                }
-            </div>
-        }
-    </div>
-</section>
+<div class="category-filters">
+    <button class="filter-btn @(categoriaSeleccionada == "Todos" ? "active" : "")" @onclick='() => FiltrarCategoria("Todos")'>
+        Todos los Productos
+    </button>
+    <button class="filter-btn @(categoriaSeleccionada == "Hardware" ? "active" : "")" @onclick='() => FiltrarCategoria("Hardware")'>
+        💻 Hardware
+    </button>
+    <button class="filter-btn @(categoriaSeleccionada == "Software" ? "active" : "")" @onclick='() => FiltrarCategoria("Software")'>
+        📦 Software
+    </button>
+    <button class="filter-btn @(categoriaSeleccionada == "Servicio" ? "active" : "")" @onclick='() => FiltrarCategoria("Servicio")'>
+        🛠️ Servicios TI
+    </button>
+</div>
 
-<section class="contact-section">
-    <div class="container">
-        <h2>¿Hablamos?</h2>
-        <p>Disponible para proyectos y oportunidades profesionales</p>
-        <div class="contact-buttons">
-            <a href="mailto:contacto@ejemplo.com" class="btn-contact">Enviar Email</a>
-            <a href="https://github.com" target="_blank" class="btn-contact-secondary">GitHub</a>
-            <a href="https://linkedin.com" target="_blank" class="btn-contact-secondary">LinkedIn</a>
+<div class="products-grid">
+    @foreach (var producto in productosFiltrados)
+    {
+        <div class="product-card">
+            <div class="product-image" style="background-image: url('@producto.ImagenUrl')"></div>
+            <div class="product-content">
+                <span class="product-badge">@producto.Tipo.ToString()</span>
+                <h3 class="product-title">@producto.Nombre</h3>
+                <p class="product-description">@producto.Descripcion</p>
+                <div class="product-footer">
+                    <div class="product-price">
+                        <span class="price-label">Desde</span>
+                        <span class="price-value">$@producto.PrecioBase.ToString("N2")</span>
+                    </div>
+                    @if (producto.EspecificacionesDisponibles.Any())
+                    {
+                        <button class="btn-customize" @onclick="() => MostrarPersonalizacion(producto)">
+                            Personalizar
+                        </button>
+                    }
+                    else
+                    {
+                        <button class="btn-add" @onclick="() => AgregarAlCarrito(producto)">
+                            Agregar
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@if (productoPersonalizar != null)
+{
+    <div class="modal-overlay" @onclick="CerrarPersonalizacion">
+        <div class="modal-content" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h2>Personaliza tu paquete</h2>
+                <button class="btn-close" @onclick="CerrarPersonalizacion">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="product-preview">
+                    <img src="@productoPersonalizar.ImagenUrl" alt="@productoPersonalizar.Nombre" />
+                    <div>
+                        <h3>@productoPersonalizar.Nombre</h3>
+                        <p>@productoPersonalizar.Descripcion</p>
+                        <div class="base-price">Precio base: $@productoPersonalizar.PrecioBase.ToString("N2")</div>
+                    </div>
+                </div>
+
+                <div class="specifications">
+                    <h4>Especificaciones y Extras:</h4>
+                    @foreach (var spec in productoPersonalizar.EspecificacionesDisponibles)
+                    {
+                        <label class="spec-option">
+                            <input type="checkbox" 
+                                   checked="@especificacionesSeleccionadas.Contains(spec)"
+                                   @onchange="() => ToggleEspecificacion(spec)" />
+                            <span class="spec-name">@spec.Nombre</span>
+                            <span class="spec-price">
+                                @(spec.PrecioAdicional >= 0 ? "+" : "")$@spec.PrecioAdicional.ToString("N2")
+                            </span>
+                        </label>
+                    }
+                </div>
+
+                <div class="total-preview">
+                    <strong>Total:</strong>
+                    <span class="total-amount">
+                        $@(productoPersonalizar.PrecioBase + especificacionesSeleccionadas.Sum(e => e.PrecioAdicional)).ToString("N2")
+                    </span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" @onclick="CerrarPersonalizacion">Cancelar</button>
+                <button class="btn-primary" @onclick="AgregarPersonalizadoAlCarrito">Agregar al Carrito</button>
+            </div>
         </div>
     </div>
-</section>
+}
 
 @code {
-    private List<Proyecto>? proyectos;
+    private List<ProductoTecnologico> productos = new();
+    private List<ProductoTecnologico> productosFiltrados = new();
+    private string categoriaSeleccionada = "Todos";
+    private ProductoTecnologico? productoPersonalizar;
+    private HashSet<Especificacion> especificacionesSeleccionadas = new();
 
     protected override async Task OnInitializedAsync()
     {
-        proyectos = await DbContext.Proyectos
-            .OrderByDescending(p => p.FechaCreacion)
+        productos = await DbContext.ProductosTecnologicos
+            .Include(p => p.EspecificacionesDisponibles)
             .ToListAsync();
+        productosFiltrados = productos;
+    }
+
+    private void FiltrarCategoria(string categoria)
+    {
+        categoriaSeleccionada = categoria;
+        productosFiltrados = categoria == "Todos" 
+            ? productos 
+            : productos.Where(p => p.Tipo.ToString() == categoria).ToList();
+    }
+
+    private void AgregarAlCarrito(ProductoTecnologico producto)
+    {
+        EstadoPedido.AgregarProducto(producto);
+    }
+
+    private void MostrarPersonalizacion(ProductoTecnologico producto)
+    {
+        productoPersonalizar = producto;
+        especificacionesSeleccionadas.Clear();
+    }
+
+    private void CerrarPersonalizacion()
+    {
+        productoPersonalizar = null;
+        especificacionesSeleccionadas.Clear();
+    }
+
+    private void ToggleEspecificacion(Especificacion spec)
+    {
+        if (especificacionesSeleccionadas.Contains(spec))
+            especificacionesSeleccionadas.Remove(spec);
+        else
+            especificacionesSeleccionadas.Add(spec);
+    }
+
+    private void AgregarPersonalizadoAlCarrito()
+    {
+        if (productoPersonalizar != null)
+        {
+            var item = new ItemOrden
+            {
+                ProductoTecnologicoId = productoPersonalizar.Id,
+                ProductoTecnologico = productoPersonalizar,
+                Cantidad = 1,
+                PrecioBaseProducto = productoPersonalizar.PrecioBase,
+                EspecificacionesSeleccionadas = especificacionesSeleccionadas.Select(e => new EspecificacionOrden
+                {
+                    EspecificacionId = e.Id,
+                    Especificacion = e,
+                    PrecioEspecificacion = e.PrecioAdicional
+                }).ToList()
+            };
+            
+            EstadoPedido.AgregarItem(item);
+            CerrarPersonalizacion();
+        }
     }
 }

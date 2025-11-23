@@ -1,0 +1,173 @@
+@page "/checkout"
+@using Microsoft.EntityFrameworkCore
+@inject EstadoPedido EstadoPedido
+@inject TechStoreContext DbContext
+@inject UsuarioService UsuarioService
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+
+<PageTitle>Checkout - TechStore</PageTitle>
+
+<div class="checkout-container">
+    <h1>🛒 Finalizar Compra</h1>
+
+    @if (UsuarioService.UsuarioActual == null)
+    {
+        <div class="empty-cart">
+            <div class="empty-icon">🔒</div>
+            <h2>Debes iniciar sesión</h2>
+            <p>Para realizar un pedido, necesitas estar autenticado en TechStore</p>
+            <a href="/login" class="btn-primary">Iniciar Sesión</a>
+        </div>
+    }
+    else if (!EstadoPedido.Items.Any())
+    {
+        <div class="empty-cart">
+            <div class="empty-icon">🛍️</div>
+            <h2>Tu carrito está vacío</h2>
+            <p>Explora nuestro catálogo y encuentra los productos perfectos para ti</p>
+            <a href="/" class="btn-primary">Ver Catálogo</a>
+        </div>
+    }
+    else
+    {
+        <div class="checkout-grid">
+            <div class="cart-items">
+                <h2>Productos en tu carrito</h2>
+                @foreach (var item in EstadoPedido.Items)
+                {
+                    <div class="cart-item">
+                        <img src="@item.ProductoTecnologico?.ImagenUrl" alt="@item.ProductoTecnologico?.Nombre" />
+                        <div class="item-details">
+                            <h3>@item.ProductoTecnologico?.Nombre</h3>
+                            <p class="item-type">@item.ProductoTecnologico?.Tipo.ToString()</p>
+                            
+                            @if (item.EspecificacionesSeleccionadas.Any())
+                            {
+                                <div class="item-specs">
+                                    <strong>Especificaciones:</strong>
+                                    <ul>
+                                        @foreach (var spec in item.EspecificacionesSeleccionadas)
+                                        {
+                                            <li>@spec.Especificacion?.Nombre (+$@spec.PrecioEspecificacion.ToString("N2"))</li>
+                                        }
+                                    </ul>
+                                </div>
+                            }
+                            
+                            <div class="item-quantity">
+                                <label>Cantidad:</label>
+                                <input type="number" min="1" @bind="item.Cantidad" @bind:event="oninput" />
+                            </div>
+                        </div>
+                        <div class="item-actions">
+                            <div class="item-price">$@(item.PrecioTotal * item.Cantidad).ToString("N2")</div>
+                            <button class="btn-remove" @onclick="() => RemoverItem(item)">Eliminar</button>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="order-summary">
+                <h2>Resumen del Pedido</h2>
+                
+                <EditForm Model="@orden" OnValidSubmit="RealizarPedido">
+                    <DataAnnotationsValidator />
+                    
+                    <div class="form-group">
+                        <label>Nombre Completo</label>
+                        <InputText @bind-Value="orden.NombreCliente" class="form-input" placeholder="Tu nombre" />
+                        <ValidationMessage For="@(() => orden.NombreCliente)" />
+                    </div>
+
+                    <div class="form-group">
+                        <label>Email</label>
+                        <InputText @bind-Value="orden.EmailCliente" class="form-input" type="email" placeholder="tu@email.com" />
+                        <ValidationMessage For="@(() => orden.EmailCliente)" />
+                    </div>
+
+                    <div class="form-group">
+                        <label>Dirección de Entrega</label>
+                        <InputTextArea @bind-Value="orden.DireccionEntrega" class="form-input" rows="3" placeholder="Calle, Ciudad, País" />
+                        <ValidationMessage For="@(() => orden.DireccionEntrega)" />
+                    </div>
+
+                    <div class="order-total">
+                        <div class="total-row">
+                            <span>Subtotal:</span>
+                            <span>$@EstadoPedido.PrecioTotal.ToString("N2")</span>
+                        </div>
+                        <div class="total-row">
+                            <span>Envío:</span>
+                            <span>GRATIS</span>
+                        </div>
+                        <div class="total-row total-final">
+                            <strong>Total:</strong>
+                            <strong>$@EstadoPedido.PrecioTotal.ToString("N2")</strong>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-checkout" disabled="@procesando">
+                        @if (procesando)
+                        {
+                            <span>Procesando...</span>
+                        }
+                        else
+                        {
+                            <span>✓ Confirmar Pedido</span>
+                        }
+                    </button>
+                </EditForm>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private Orden orden = new();
+    private bool procesando = false;
+
+    private void RemoverItem(ItemOrden item)
+    {
+        EstadoPedido.RemoverItem(item);
+    }
+
+    private async Task RealizarPedido()
+    {
+        procesando = true;
+
+        var especIds = EstadoPedido.Items
+            .SelectMany(i => i.EspecificacionesSeleccionadas)
+            .Select(e => e.EspecificacionId)
+            .Distinct()
+            .ToList();
+        
+        var especificacionesList = await DbContext.Especificaciones
+            .Where(e => especIds.Contains(e.Id))
+            .ToListAsync();
+        var especificacionesDb = especificacionesList.ToDictionary(e => e.Id);
+
+        orden.FechaCreacion = DateTime.Now;
+        orden.UsuarioId = UsuarioService.UsuarioActual?.Id;
+        orden.Items = EstadoPedido.Items.Select(item => new ItemOrden
+        {
+            ProductoTecnologicoId = item.ProductoTecnologicoId,
+            Cantidad = item.Cantidad,
+            PrecioBaseProducto = item.PrecioBaseProducto,
+            EspecificacionesSeleccionadas = item.EspecificacionesSeleccionadas.Select(spec => new EspecificacionOrden
+            {
+                EspecificacionId = spec.EspecificacionId,
+                Especificacion = especificacionesDb.GetValueOrDefault(spec.EspecificacionId),
+                PrecioEspecificacion = spec.PrecioEspecificacion
+            }).ToList()
+        }).ToList();
+
+        DbContext.Ordenes.Add(orden);
+        await DbContext.SaveChangesAsync();
+
+        EstadoPedido.LimpiarCarrito();
+        
+        procesando = false;
+        NavigationManager.NavigateTo("/mis-pedidos");
+    }
+}

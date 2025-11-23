@@ -1,0 +1,112 @@
+@page "/mis-pedidos"
+@using Microsoft.EntityFrameworkCore
+@inject TechStoreContext DbContext
+@inject UsuarioService UsuarioService
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+
+<PageTitle>Mis Pedidos - TechStore</PageTitle>
+
+<div class="orders-container">
+    <h1>📦 Mis Pedidos</h1>
+
+    @if (UsuarioService.UsuarioActual == null)
+    {
+        <div class="empty-state">
+            <div class="empty-icon">🔒</div>
+            <h2>Debes iniciar sesión</h2>
+            <p>Para ver tu historial de pedidos, necesitas estar autenticado</p>
+            <a href="/login" class="btn-primary">Iniciar Sesión</a>
+        </div>
+    }
+    else if (!ordenes.Any())
+    {
+        <div class="empty-orders">
+            <div class="empty-icon">📋</div>
+            <h2>No tienes pedidos aún</h2>
+            <p>Explora nuestro catálogo y realiza tu primera compra</p>
+            <a href="/" class="btn-primary">Ver Catálogo</a>
+        </div>
+    }
+    else
+    {
+        <div class="orders-list">
+            @foreach (var orden in ordenes.OrderByDescending(o => o.FechaCreacion))
+            {
+                <div class="order-card">
+                    <div class="order-header">
+                        <div>
+                            <h3>Pedido #@orden.Id</h3>
+                            <p class="order-date">@orden.FechaCreacion.ToString("dd/MM/yyyy HH:mm")</p>
+                        </div>
+                        <div class="order-status">
+                            <span class="status-badge">✓ Confirmado</span>
+                        </div>
+                    </div>
+
+                    <div class="order-details">
+                        <div class="detail-row">
+                            <strong>Cliente:</strong>
+                            <span>@orden.NombreCliente</span>
+                        </div>
+                        <div class="detail-row">
+                            <strong>Email:</strong>
+                            <span>@orden.EmailCliente</span>
+                        </div>
+                        <div class="detail-row">
+                            <strong>Dirección:</strong>
+                            <span>@orden.DireccionEntrega</span>
+                        </div>
+                    </div>
+
+                    <div class="order-items">
+                        <h4>Productos:</h4>
+                        @foreach (var item in orden.Items)
+                        {
+                            <div class="order-item">
+                                <div class="item-info">
+                                    <span class="item-name">@item.ProductoTecnologico?.Nombre</span>
+                                    <span class="item-qty">× @item.Cantidad</span>
+                                </div>
+                                @if (item.EspecificacionesSeleccionadas.Any())
+                                {
+                                    <div class="item-specs-list">
+                                        @foreach (var spec in item.EspecificacionesSeleccionadas)
+                                        {
+                                            <span class="spec-tag">@spec.Especificacion?.Nombre</span>
+                                        }
+                                    </div>
+                                }
+                                <div class="item-price">$@(item.PrecioTotal * item.Cantidad).ToString("N2")</div>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="order-total">
+                        <strong>Total:</strong>
+                        <strong class="total-amount">$@orden.PrecioTotal.ToString("N2")</strong>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<Orden> ordenes = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (UsuarioService.UsuarioActual != null)
+        {
+            ordenes = await DbContext.Ordenes
+                .Where(o => o.UsuarioId == UsuarioService.UsuarioActual.Id)
+                .Include(o => o.Items)
+                    .ThenInclude(i => i.ProductoTecnologico)
+                .Include(o => o.Items)
+                    .ThenInclude(i => i.EspecificacionesSeleccionadas)
+                        .ThenInclude(e => e.Especificacion)
+                .ToListAsync();
+        }
+    }
+}

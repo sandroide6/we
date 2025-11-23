@@ -1,0 +1,91 @@
+@inherits LayoutComponentBase
+@inject EstadoPedido EstadoPedido
+@inject UsuarioService UsuarioService
+@inject NavigationManager NavigationManager
+
+<div class="page">
+    <header class="top-bar">
+        <div class="container">
+            <a href="/" class="logo">
+                <span class="logo-icon">⚡</span>
+                <span class="logo-text">TechStore</span>
+            </a>
+            
+            <nav class="nav-menu">
+                <a href="/" class="nav-link @(IsActive("/") ? "active" : "")">Catálogo</a>
+                @if (UsuarioService.UsuarioActual != null)
+                {
+                    <a href="/mis-pedidos" class="nav-link @(IsActive("/mis-pedidos") ? "active" : "")">Mis Pedidos</a>
+                }
+            </nav>
+
+            <div class="top-bar-right">
+                @if (UsuarioService.UsuarioActual != null)
+                {
+                    <div class="user-menu">
+                        <span class="user-greeting">👤 @UsuarioService.UsuarioActual.Nombre</span>
+                        <div class="user-dropdown">
+                            <a href="/perfil" class="dropdown-item">Mi Perfil</a>
+                            <a href="/mis-pedidos" class="dropdown-item">Mis Pedidos</a>
+                            <hr />
+                            <button @onclick="Logout" class="dropdown-item logout-btn">Cerrar Sesión</button>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="auth-buttons">
+                        <a href="/login" class="btn-login-header">Iniciar Sesión</a>
+                        <a href="/register" class="btn-register-header">Registrarse</a>
+                    </div>
+                }
+
+                <div class="cart-summary" @onclick="NavigateToCheckout">
+                    <span class="cart-icon">🛒</span>
+                    <span class="cart-count">@EstadoPedido.Items.Count</span>
+                    <span class="cart-total">$@EstadoPedido.PrecioTotal.ToString("N2")</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+            @Body
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 TechStore - Tu tienda de tecnología de confianza</p>
+        </div>
+    </footer>
+</div>
+
+@code {
+    private bool IsActive(string path)
+    {
+        return NavigationManager.Uri.EndsWith(path);
+    }
+
+    private void NavigateToCheckout()
+    {
+        if (EstadoPedido.Items.Count > 0)
+        {
+            if (UsuarioService.UsuarioActual == null)
+            {
+                NavigationManager.NavigateTo("/login");
+            }
+            else
+            {
+                NavigationManager.NavigateTo("/checkout");
+            }
+        }
+    }
+
+    private async Task Logout()
+    {
+        await UsuarioService.LogoutAsync();
+        NavigationManager.NavigateTo("/login");
+    }
+}

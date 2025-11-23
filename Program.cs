@@ -7,14 +7,17 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-builder.Services.AddDbContext<PortfolioContext>(options =>
-    options.UseSqlite("Data Source=portfolio.db"));
+builder.Services.AddDbContext<TechStoreContext>(options =>
+    options.UseSqlite("Data Source=techstore.db"));
+
+builder.Services.AddScoped<EstadoPedido>();
+builder.Services.AddScoped<UsuarioService>();
 
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<PortfolioContext>();
+    var db = scope.ServiceProvider.GetRequiredService<TechStoreContext>();
     db.Database.EnsureCreated();
 }
 
