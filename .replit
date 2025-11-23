@@ -1,4 +1,4 @@
-modules = ["dotnet-8.0"]
+modules = ["web", "dotnet-7.0", "dotnet-8.0"]
 [agent]
 expertMode = true
 
@@ -31,9 +31,16 @@ localPort = 5000
 externalPort = 80
 
 [[ports]]
+localPort = 38377
+externalPort = 3002
+
+[[ports]]
 localPort = 40311
 externalPort = 3000
 
 [[ports]]
 localPort = 43799
 externalPort = 3001
+
+[nix]
+channel = "stable-25_05"
