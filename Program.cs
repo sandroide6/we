@@ -10,7 +10,7 @@ builder.Services.AddRazorComponents()
 builder.Services.AddDbContext<TechStoreContext>(options =>
     options.UseSqlite("Data Source=techstore.db"));
 
-builder.Services.AddScoped<EstadoPedido>();
+builder.Services.AddSingleton<EstadoPedido>();
 builder.Services.AddScoped<UsuarioService>();
 builder.Services.AddSingleton<UsuarioSession>();
 

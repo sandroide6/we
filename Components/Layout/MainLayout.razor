@@ -63,6 +63,16 @@
 </div>
 
 @code {
+    protected override void OnInitialized()
+    {
+        NavigationManager.LocationChanged += LocationChanged;
+    }
+
+    private void LocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        StateHasChanged();
+    }
+
     private bool IsActive(string path)
     {
         return NavigationManager.Uri.EndsWith(path);
