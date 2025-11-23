@@ -2,6 +2,7 @@
 @inject EstadoPedido EstadoPedido
 @inject UsuarioService UsuarioService
 @inject NavigationManager NavigationManager
+@inject CarritoNotificador CarritoNotificador
 
 <div class="page">
     <header class="top-bar">
@@ -66,7 +67,7 @@
     protected override void OnInitialized()
     {
         NavigationManager.LocationChanged += LocationChanged;
-        EstadoPedido.OnCarritoActualizado += CarritoActualizado;
+        CarritoNotificador.OnCarritoActualizado += ActualizarCarrito;
     }
 
     private void LocationChanged(object? sender, LocationChangedEventArgs e)
@@ -74,16 +75,9 @@
         StateHasChanged();
     }
 
-    private void CarritoActualizado()
+    private async Task ActualizarCarrito()
     {
-        try
-        {
-            StateHasChanged();
-        }
-        catch
-        {
-            // Ignorar errores de Dispatcher
-        }
+        await InvokeAsync(() => StateHasChanged());
     }
 
     private bool IsActive(string path)

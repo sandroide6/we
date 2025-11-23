@@ -11,6 +11,7 @@ builder.Services.AddDbContext<TechStoreContext>(options =>
     options.UseSqlite("Data Source=techstore.db"));
 
 builder.Services.AddSingleton<EstadoPedido>();
+builder.Services.AddSingleton<CarritoNotificador>();
 builder.Services.AddScoped<UsuarioService>();
 builder.Services.AddSingleton<UsuarioSession>();
 

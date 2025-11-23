@@ -37,3 +37,17 @@ The application features a modern and professional design with a dark theme util
 - **ORM**: Entity Framework Core 8.0
 - **Fonts**: Google Fonts (Inter)
 - **Image Assets**: Unsplash (for product images)
+## Development Notes - Session Nov 23, 2025
+
+### CARRITO COMPLETAMENTE FUNCIONAL ✅
+
+**Final Fix**: Created `CarritoNotificador` (Singleton) service with async thread-safe events
+- Index.razor (InteractiveServer) adds items and notifies via `CarritoNotificador.NotificarCambio()`
+- MainLayout (SSR) receives notification and updates via `InvokeAsync(() => StateHasChanged())`
+- **Result**: Cart updates INSTANTLY in navbar when items are added ✅
+
+**Technical Stack**:
+- EstadoPedido: Singleton that holds cart items
+- CarritoNotificador: Singleton event bus for component communication  
+- MainLayout: Subscribes to cart notifications
+- Index.razor: Triggers notifications on add-to-cart actions

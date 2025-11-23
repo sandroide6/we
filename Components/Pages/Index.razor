@@ -2,6 +2,7 @@
 @using Microsoft.EntityFrameworkCore
 @inject TechStoreContext DbContext
 @inject EstadoPedido EstadoPedido
+@inject CarritoNotificador CarritoNotificador
 @rendermode InteractiveServer
 
 <PageTitle>TechStore - Catálogo de Productos</PageTitle>
@@ -48,7 +49,7 @@
                     }
                     else
                     {
-                        <button class="btn-add" @onclick="() => AgregarAlCarrito(producto)">
+                        <button class="btn-add" @onclick="@(async () => await AgregarAlCarrito(producto))">
                             Agregar
                         </button>
                     }
@@ -130,10 +131,10 @@
             : productos.Where(p => p.Tipo.ToString() == categoria).ToList();
     }
 
-    private void AgregarAlCarrito(ProductoTecnologico producto)
+    private async Task AgregarAlCarrito(ProductoTecnologico producto)
     {
         EstadoPedido.AgregarProducto(producto);
-        StateHasChanged();
+        await CarritoNotificador.NotificarCambio();
     }
 
     private void MostrarPersonalizacion(ProductoTecnologico producto)
@@ -156,7 +157,7 @@
             especificacionesSeleccionadas.Add(spec);
     }
 
-    private void AgregarPersonalizadoAlCarrito()
+    private async Task AgregarPersonalizadoAlCarrito()
     {
         if (productoPersonalizar != null)
         {
@@ -176,7 +177,7 @@
             
             EstadoPedido.AgregarItem(item);
             CerrarPersonalizacion();
-            StateHasChanged();
+            await CarritoNotificador.NotificarCambio();
         }
     }
 }

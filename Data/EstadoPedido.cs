@@ -6,8 +6,6 @@ public class EstadoPedido
 {
     public List<ItemOrden> Items { get; set; } = new();
     
-    public event Action? OnCarritoActualizado;
-    
     public void AgregarProducto(ProductoTecnologico producto)
     {
         var itemExistente = Items.FirstOrDefault(i => 
@@ -29,26 +27,21 @@ public class EstadoPedido
                 EspecificacionesSeleccionadas = new List<EspecificacionOrden>()
             });
         }
-        
-        OnCarritoActualizado?.Invoke();
     }
     
     public void AgregarItem(ItemOrden item)
     {
         Items.Add(item);
-        OnCarritoActualizado?.Invoke();
     }
     
     public void RemoverItem(ItemOrden item)
     {
         Items.Remove(item);
-        OnCarritoActualizado?.Invoke();
     }
     
     public void LimpiarCarrito()
     {
         Items.Clear();
-        OnCarritoActualizado?.Invoke();
     }
     
     public decimal PrecioTotal =>
