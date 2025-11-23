@@ -69,8 +69,8 @@
         {
             mensaje = "¡Bienvenido!";
             esError = false;
-            await Task.Delay(1000);
-            NavigationManager.NavigateTo("/");
+            await Task.Delay(500);
+            NavigationManager.NavigateTo("/", forceLoad: true);
         }
         else
         {

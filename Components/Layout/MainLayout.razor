@@ -63,11 +63,6 @@
 </div>
 
 @code {
-    protected override void OnInitialized()
-    {
-        UsuarioService.OnUsuarioChanged += StateHasChanged;
-    }
-
     private bool IsActive(string path)
     {
         return NavigationManager.Uri.EndsWith(path);

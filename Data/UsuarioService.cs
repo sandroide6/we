@@ -8,12 +8,22 @@ namespace TechStore.Data;
 public class UsuarioService
 {
     private readonly TechStoreContext _dbContext;
+    private readonly UsuarioSession _usuarioSession;
     public Usuario? UsuarioActual { get; set; }
-    public event Action? OnUsuarioChanged;
 
-    public UsuarioService(TechStoreContext dbContext)
+    public UsuarioService(TechStoreContext dbContext, UsuarioSession usuarioSession)
     {
         _dbContext = dbContext;
+        _usuarioSession = usuarioSession;
+        CargarUsuarioActual();
+    }
+
+    private void CargarUsuarioActual()
+    {
+        if (_usuarioSession.UsuarioIdActual.HasValue)
+        {
+            UsuarioActual = _dbContext.Usuarios.Find(_usuarioSession.UsuarioIdActual.Value);
+        }
     }
 
     public async Task<(bool éxito, string mensaje)> RegistrarAsync(string email, string nombre, string apellido, string contraseña, string contraseñaConfirm)
@@ -41,7 +51,7 @@ public class UsuarioService
         await _dbContext.SaveChangesAsync();
 
         UsuarioActual = usuario;
-        NotifyUsuarioChanged();
+        _usuarioSession.UsuarioIdActual = usuario.Id;
         return (true, "Registro exitoso");
     }
 
@@ -60,14 +70,14 @@ public class UsuarioService
         await _dbContext.SaveChangesAsync();
 
         UsuarioActual = usuario;
-        NotifyUsuarioChanged();
+        _usuarioSession.UsuarioIdActual = usuario.Id;
         return (true, "Login exitoso");
     }
 
     public async Task LogoutAsync()
     {
         UsuarioActual = null;
-        NotifyUsuarioChanged();
+        _usuarioSession.LimpiarSesion();
         await Task.CompletedTask;
     }
 
@@ -91,13 +101,7 @@ public class UsuarioService
 
         await _dbContext.SaveChangesAsync();
         UsuarioActual = usuario;
-        NotifyUsuarioChanged();
         return true;
-    }
-
-    private void NotifyUsuarioChanged()
-    {
-        OnUsuarioChanged?.Invoke();
     }
 
     public async Task<bool> CambiarContraseñaAsync(int id, string contraseñaActual, string contraseñaNueva, string contraseñaConfirm)

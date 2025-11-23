@@ -298,6 +298,23 @@ La aplicación estará disponible en: `http://0.0.0.0:5000`
 
 ## Notas de Desarrollo
 
+### Sesión Nov 23, 2025 - Correcciones de Threading y Persistencia
+
+**Problema Principal**: Error de threading "The current thread is not associated with the Dispatcher" cuando el usuario se registraba.
+
+**Solución Implementada**:
+1. **Removido patrón de eventos cross-thread**: Eliminamos el evento `OnUsuarioChanged` que intentaba sincronizar MainLayout desde un contexto diferente
+2. **Creado UsuarioSession (Singleton)**: Servicio que guarda el ID del usuario actual de forma persistente
+3. **Persistencia de sesión**: Cuando se registra/login, se guarda el ID en UsuarioSession. Al inicializarse UsuarioService después de forceLoad, carga el usuario desde la BD
+4. **ForceLoad: true**: Usamos NavigateTo con forceLoad:true para recargar la página completamente después del registro/login
+5. **Carga síncrona**: CargarUsuarioActual() usa .Find() en lugar de FindAsync() para cargar el usuario en el constructor
+
+**Ventajas del nuevo sistema**:
+- ✅ Sin conflictos de threading
+- ✅ Sesión persiste después de forceLoad
+- ✅ MainLayout se actualiza cuando navega a "/"
+- ✅ Logout limpia la sesión correctamente
+
 ### Correcciones Importantes Implementadas
 - **Persistencia de Especificaciones**: Se corrigió un problema crítico donde las especificaciones personalizadas no se guardaban correctamente. Ahora se cargan las entidades de especificación desde la base de datos antes de persistir la orden.
 - **Clonación de Items**: Los items del carrito se clonan correctamente antes de guardar para evitar problemas con Entity Framework.
