@@ -1,5 +1,6 @@
 @page "/checkout"
 @using Microsoft.EntityFrameworkCore
+@implements IDisposable
 @inject EstadoPedido EstadoPedido
 @inject TechStoreContext DbContext
 @inject UsuarioService UsuarioService
@@ -49,7 +50,7 @@
                                     <ul>
                                         @foreach (var spec in item.EspecificacionesSeleccionadas)
                                         {
-                                            <li>@spec.Especificacion?.Nombre (+$@spec.PrecioEspecificacion.ToString("N2"))</li>
+                                            <li>@spec.Especificacion?.Nombre (+@spec.PrecioEspecificacion.ToString("C2"))</li>
                                         }
                                     </ul>
                                 </div>
@@ -57,11 +58,14 @@
                             
                             <div class="item-quantity">
                                 <label>Cantidad:</label>
-                                <input type="number" min="1" @bind="item.Cantidad" @bind:event="oninput" />
+                                <input type="number" 
+                                       min="1" 
+                                       value="@item.Cantidad" 
+                                       @oninput="@((e) => ActualizarCantidad(item, e.Value?.ToString()))" />
                             </div>
                         </div>
                         <div class="item-actions">
-                            <div class="item-price">$@(item.PrecioTotal * item.Cantidad).ToString("N2")</div>
+                            <div class="item-price">@((item.PrecioTotal * item.Cantidad).ToString("C2"))</div>
                             <button class="btn-remove" @onclick="() => RemoverItem(item)">Eliminar</button>
                         </div>
                     </div>
@@ -95,7 +99,7 @@
                     <div class="order-total">
                         <div class="total-row">
                             <span>Subtotal:</span>
-                            <span>$@EstadoPedido.PrecioTotal.ToString("N2")</span>
+                            <span>@EstadoPedido.PrecioTotal.ToString("C2")</span>
                         </div>
                         <div class="total-row">
                             <span>Envío:</span>
@@ -103,7 +107,7 @@
                         </div>
                         <div class="total-row total-final">
                             <strong>Total:</strong>
-                            <strong>$@EstadoPedido.PrecioTotal.ToString("N2")</strong>
+                            <strong>@EstadoPedido.PrecioTotal.ToString("C2")</strong>
                         </div>
                     </div>
 
@@ -127,9 +131,27 @@
     private Orden orden = new();
     private bool procesando = false;
 
+    protected override void OnInitialized()
+    {
+        EstadoPedido.OnChange += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        EstadoPedido.OnChange -= StateHasChanged;
+    }
+
     private void RemoverItem(ItemOrden item)
     {
         EstadoPedido.RemoverItem(item);
+    }
+
+    private void ActualizarCantidad(ItemOrden item, string? valor)
+    {
+        if (int.TryParse(valor, out int cantidad))
+        {
+            EstadoPedido.ActualizarCantidad(item, cantidad);
+        }
     }
 
     private async Task RealizarPedido()

@@ -4,6 +4,8 @@ namespace TechStore.Data;
 
 public class EstadoPedido
 {
+    public event Action? OnChange;
+    
     public List<ItemOrden> Items { get; set; } = new();
     
     public void AgregarProducto(ProductoTecnologico producto)
@@ -27,23 +29,45 @@ public class EstadoPedido
                 EspecificacionesSeleccionadas = new List<EspecificacionOrden>()
             });
         }
+        NotificarCambio();
     }
     
     public void AgregarItem(ItemOrden item)
     {
         Items.Add(item);
+        NotificarCambio();
     }
     
     public void RemoverItem(ItemOrden item)
     {
         Items.Remove(item);
+        NotificarCambio();
+    }
+    
+    public void ActualizarCantidad(ItemOrden item, int nuevaCantidad)
+    {
+        if (nuevaCantidad <= 0)
+        {
+            RemoverItem(item);
+        }
+        else
+        {
+            item.Cantidad = nuevaCantidad;
+            NotificarCambio();
+        }
     }
     
     public void LimpiarCarrito()
     {
         Items.Clear();
+        NotificarCambio();
     }
     
     public decimal PrecioTotal =>
         Items.Sum(i => i.PrecioTotal * i.Cantidad);
+    
+    private void NotificarCambio()
+    {
+        OnChange?.Invoke();
+    }
 }

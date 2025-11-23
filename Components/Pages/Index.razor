@@ -38,7 +38,7 @@
                 <div class="product-footer">
                     <div class="product-price">
                         <span class="price-label">Desde</span>
-                        <span class="price-value">$@producto.PrecioBase.ToString("N2")</span>
+                        <span class="price-value">@producto.PrecioBase.ToString("C2")</span>
                     </div>
                     @if (producto.EspecificacionesDisponibles.Any())
                     {
@@ -72,7 +72,7 @@
                     <div>
                         <h3>@productoPersonalizar.Nombre</h3>
                         <p>@productoPersonalizar.Descripcion</p>
-                        <div class="base-price">Precio base: $@productoPersonalizar.PrecioBase.ToString("N2")</div>
+                        <div class="base-price">Precio base: @productoPersonalizar.PrecioBase.ToString("C2")</div>
                     </div>
                 </div>
 
@@ -86,7 +86,7 @@
                                    @onchange="() => ToggleEspecificacion(spec)" />
                             <span class="spec-name">@spec.Nombre</span>
                             <span class="spec-price">
-                                @(spec.PrecioAdicional >= 0 ? "+" : "")$@spec.PrecioAdicional.ToString("N2")
+                                @(spec.PrecioAdicional >= 0 ? "+" : "")@spec.PrecioAdicional.ToString("C2")
                             </span>
                         </label>
                     }
@@ -95,7 +95,7 @@
                 <div class="total-preview">
                     <strong>Total:</strong>
                     <span class="total-amount">
-                        $@(productoPersonalizar.PrecioBase + especificacionesSeleccionadas.Sum(e => e.PrecioAdicional)).ToString("N2")
+                        @((productoPersonalizar.PrecioBase + especificacionesSeleccionadas.Sum(e => e.PrecioAdicional)).ToString("C2"))
                     </span>
                 </div>
             </div>

@@ -1,4 +1,5 @@
 @inherits LayoutComponentBase
+@implements IDisposable
 @inject EstadoPedido EstadoPedido
 @inject UsuarioService UsuarioService
 @inject NavigationManager NavigationManager
@@ -40,10 +41,19 @@
                     </div>
                 }
 
-                <div class="cart-summary" @onclick="NavigateToCheckout">
+                <div class="cart-summary @(EstadoPedido.Items.Count > 0 ? "has-items" : "")" @onclick="NavigateToCheckout">
                     <span class="cart-icon">🛒</span>
-                    <span class="cart-count">@EstadoPedido.Items.Count</span>
-                    <span class="cart-total">$@EstadoPedido.PrecioTotal.ToString("N2")</span>
+                    @if (EstadoPedido.Items.Count > 0)
+                    {
+                        <div class="cart-info">
+                            <span class="cart-count">@EstadoPedido.Items.Count @(EstadoPedido.Items.Count == 1 ? "item" : "items")</span>
+                            <span class="cart-total">@EstadoPedido.PrecioTotal.ToString("C2")</span>
+                        </div>
+                    }
+                    else
+                    {
+                        <span class="cart-empty">Vacío</span>
+                    }
                 </div>
             </div>
         </div>
@@ -63,6 +73,16 @@
 </div>
 
 @code {
+    protected override void OnInitialized()
+    {
+        EstadoPedido.OnChange += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        EstadoPedido.OnChange -= StateHasChanged;
+    }
+
     private bool IsActive(string path)
     {
         return NavigationManager.Uri.EndsWith(path);
