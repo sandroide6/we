@@ -8,6 +8,14 @@ TechStore es una tienda en línea moderna y profesional especializada en product
 
 ## Características Principales
 
+### 🔐 Sistema de Autenticación
+- Login y registro de usuarios completamente funcional
+- Hashing seguro de contraseñas con SHA256
+- Validación de email y contraseña
+- Perfil de usuario con información personal
+- Cambio de contraseña seguro
+- Sesión de usuario persistent
+
 ### 🛒 Catálogo Interactivo
 - Navegación por categorías: Hardware, Software y Servicios TI
 - Tarjetas de productos con imágenes reales de alta calidad
@@ -25,12 +33,21 @@ TechStore es una tienda en línea moderna y profesional especializada en product
 - Modificación de cantidades de productos
 - Eliminación de items del carrito
 - Cálculo automático de totales
+- Checkout requiere autenticación
 
 ### 📦 Sistema de Pedidos
 - Formulario de checkout con validación de datos
 - Captura de información del cliente (nombre, email, dirección)
-- Historial completo de pedidos realizados
+- Historial completo de pedidos realizados por usuario
 - Visualización detallada de especificaciones personalizadas en pedidos pasados
+- Órdenes vinculadas a cuentas de usuario
+
+### 👤 Perfil de Usuario
+- Visualización y edición de información personal
+- Dirección de envío guardada
+- Teléfono de contacto
+- Historial de membresía
+- Cambio seguro de contraseña
 
 ### 🎨 Diseño Moderno y Profesional
 - Tema oscuro con gradientes tecnológicos (azul cian y negro)
@@ -38,6 +55,7 @@ TechStore es una tienda en línea moderna y profesional especializada en product
 - Animaciones suaves y transiciones fluidas
 - Interfaz responsive y optimizada para diferentes dispositivos
 - Efectos hover y estados interactivos
+- Menú dropdown con opciones de usuario
 
 ## Arquitectura Técnica
 
@@ -57,6 +75,9 @@ TechStore/
 │   │   └── MainLayout.razor.css       # Estilos del layout
 │   ├── Pages/
 │   │   ├── Index.razor                # Catálogo de productos
+│   │   ├── Login.razor                # Página de login
+│   │   ├── Register.razor             # Página de registro
+│   │   ├── Perfil.razor               # Página de perfil de usuario
 │   │   ├── Checkout.razor             # Página de checkout
 │   │   └── MisPedidos.razor           # Historial de pedidos
 │   ├── App.razor                      # Componente raíz de la app
@@ -64,10 +85,12 @@ TechStore/
 │   └── _Imports.razor                 # Imports globales
 ├── Data/
 │   ├── TechStoreContext.cs            # Contexto de Entity Framework
-│   └── EstadoPedido.cs                # Servicio de estado del carrito
+│   ├── EstadoPedido.cs                # Servicio de estado del carrito
+│   └── UsuarioService.cs              # Servicio de autenticación
 ├── Models/
 │   ├── ProductoTecnologico.cs         # Modelo de producto
 │   ├── Especificacion.cs              # Modelo de especificaciones
+│   ├── Usuario.cs                     # Modelo de usuario
 │   ├── Orden.cs                       # Modelo de orden
 │   ├── ItemOrden.cs                   # Modelo de item de orden
 │   └── EspecificacionOrden.cs         # Modelo de especificación en orden
@@ -80,6 +103,20 @@ TechStore/
 ```
 
 ### Modelos de Datos
+
+#### Usuario
+Representa un usuario registrado en el sistema.
+- `Id`: Identificador único
+- `Email`: Email único del usuario
+- `Nombre`: Nombre del usuario
+- `Apellido`: Apellido del usuario
+- `Contraseña`: Contraseña hasheada con SHA256
+- `Telefono`: Número de teléfono de contacto
+- `Dirección`: Dirección de envío
+- `FechaRegistro`: Fecha de creación de la cuenta
+- `UltimoLogin`: Fecha del último login
+- `EstaActivo`: Estado de la cuenta (activa/inactiva)
+- `Ordenes`: Lista de órdenes del usuario
 
 #### ProductoTecnologico
 Representa los productos tecnológicos disponibles en la tienda.
@@ -106,6 +143,8 @@ Representa un pedido realizado por un cliente.
 - `DireccionEntrega`: Dirección de entrega
 - `NombreCliente`: Nombre del cliente
 - `EmailCliente`: Email del cliente
+- `UsuarioId`: FK al usuario (NUEVO)
+- `Usuario`: Referencia al usuario (NUEVO)
 - `Items`: Lista de items en la orden
 
 #### ItemOrden
@@ -125,10 +164,21 @@ Representa una especificación seleccionada en un item de orden.
 ### Capa de Datos
 
 #### TechStoreContext
-Contexto de Entity Framework que gestiona la conexión a la base de datos SQLite. Incluye datos de ejemplo (seed data) con 8 productos tecnológicos y 14 especificaciones predefinidas.
+Contexto de Entity Framework que gestiona la conexión a la base de datos SQLite. Incluye datos de ejemplo (seed data) con 8 productos tecnológicos y 14 especificaciones predefinidas. Gestiona todas las entidades: Productos, Especificaciones, Usuarios, Órdenes, Items de Orden.
 
 #### EstadoPedido
 Servicio scoped que gestiona el estado del carrito de compras durante la sesión del usuario. Permite agregar productos simples o personalizados, remover items y calcular totales.
+
+#### UsuarioService
+Servicio scoped que gestiona la autenticación de usuarios. Funcionalidades:
+- `RegistrarAsync()`: Crear nueva cuenta de usuario
+- `LoginAsync()`: Autenticar usuario existente
+- `LogoutAsync()`: Cerrar sesión
+- `ObtenerUsuarioPorIdAsync()`: Obtener datos del usuario
+- `ActualizarPerfilAsync()`: Actualizar información personal
+- `CambiarContraseñaAsync()`: Cambiar contraseña segura
+- Hashing seguro de contraseñas con SHA256
+- Gestión de `UsuarioActual` para la sesión
 
 ### Flujo de Datos
 
@@ -185,6 +235,20 @@ dotnet run
 ```
 La aplicación estará disponible en: `http://0.0.0.0:5000`
 
+### Crear una Cuenta (Registro)
+1. Haz clic en el botón "Registrarse" en el header
+2. Completa el formulario con:
+   - Nombre completo
+   - Email (debe ser único)
+   - Contraseña (mínimo 6 caracteres)
+   - Confirmación de contraseña
+3. Se creará tu cuenta automáticamente y serás redirigido al catálogo
+
+### Iniciar Sesión
+1. Haz clic en "Iniciar Sesión" en el header
+2. Ingresa tu email y contraseña
+3. Se abrirá tu sesión y verás tu nombre en el header
+
 ### Explorar el Catálogo
 1. Navega a la página principal
 2. Usa los filtros de categoría para ver productos específicos
@@ -194,13 +258,22 @@ La aplicación estará disponible en: `http://0.0.0.0:5000`
 ### Realizar un Pedido
 1. Agrega productos al carrito
 2. Haz clic en el carrito en el header (muestra cantidad y total)
-3. Revisa tu carrito y ajusta cantidades
-4. Completa el formulario de checkout
-5. Confirma el pedido
+3. Si no estás logueado, serás redirigido a login
+4. Revisa tu carrito y ajusta cantidades
+5. Completa el formulario de checkout con dirección de envío
+6. Confirma el pedido
 
-### Ver Historial
-1. Navega a "Mis Pedidos" en el menú
-2. Revisa todos los pedidos realizados con detalles completos
+### Ver Historial de Pedidos
+1. Haz clic en tu nombre en el header (aparecerá un menú)
+2. Selecciona "Mis Pedidos"
+3. Revisa todos tus pedidos realizados con detalles completos
+
+### Gestionar tu Perfil
+1. Haz clic en tu nombre en el header
+2. Selecciona "Mi Perfil"
+3. Actualiza tu información personal (nombre, apellido, teléfono, dirección)
+4. Cambia tu contraseña de forma segura
+5. Cierra sesión desde el botón "Cerrar Sesión"
 
 ## Mejoras Futuras Sugeridas
 
@@ -229,6 +302,13 @@ La aplicación estará disponible en: `http://0.0.0.0:5000`
 - **Persistencia de Especificaciones**: Se corrigió un problema crítico donde las especificaciones personalizadas no se guardaban correctamente. Ahora se cargan las entidades de especificación desde la base de datos antes de persistir la orden.
 - **Clonación de Items**: Los items del carrito se clonan correctamente antes de guardar para evitar problemas con Entity Framework.
 - **Navegaciones EF**: Se asegura que todas las navegaciones de Entity Framework estén correctamente pobladas usando Include/ThenInclude.
+- **Sistema de Autenticación**: Implementado sistema completo de login/registro con:
+  - Hashing seguro de contraseñas
+  - Validación de datos
+  - Gestión de sesiones
+  - Vinculación de órdenes a usuarios
+- **Protección de Rutas**: Checkout y "Mis Pedidos" ahora requieren autenticación
+- **Menú de Usuario**: Dropdown en header que muestra opciones cuando se está logueado
 
 ### Performance
 - Una sola consulta batch para cargar especificaciones en checkout

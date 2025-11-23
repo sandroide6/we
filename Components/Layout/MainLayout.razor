@@ -1,5 +1,6 @@
 @inherits LayoutComponentBase
 @inject EstadoPedido EstadoPedido
+@inject UsuarioService UsuarioService
 @inject NavigationManager NavigationManager
 
 <div class="page">
@@ -12,13 +13,38 @@
             
             <nav class="nav-menu">
                 <a href="/" class="nav-link @(IsActive("/") ? "active" : "")">Catálogo</a>
-                <a href="/mis-pedidos" class="nav-link @(IsActive("/mis-pedidos") ? "active" : "")">Mis Pedidos</a>
+                @if (UsuarioService.UsuarioActual != null)
+                {
+                    <a href="/mis-pedidos" class="nav-link @(IsActive("/mis-pedidos") ? "active" : "")">Mis Pedidos</a>
+                }
             </nav>
 
-            <div class="cart-summary" @onclick="NavigateToCheckout">
-                <span class="cart-icon">🛒</span>
-                <span class="cart-count">@EstadoPedido.Items.Count</span>
-                <span class="cart-total">$@EstadoPedido.PrecioTotal.ToString("N2")</span>
+            <div class="top-bar-right">
+                @if (UsuarioService.UsuarioActual != null)
+                {
+                    <div class="user-menu">
+                        <span class="user-greeting">👤 @UsuarioService.UsuarioActual.Nombre</span>
+                        <div class="user-dropdown">
+                            <a href="/perfil" class="dropdown-item">Mi Perfil</a>
+                            <a href="/mis-pedidos" class="dropdown-item">Mis Pedidos</a>
+                            <hr />
+                            <button @onclick="Logout" class="dropdown-item logout-btn">Cerrar Sesión</button>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="auth-buttons">
+                        <a href="/login" class="btn-login-header">Iniciar Sesión</a>
+                        <a href="/register" class="btn-register-header">Registrarse</a>
+                    </div>
+                }
+
+                <div class="cart-summary" @onclick="NavigateToCheckout">
+                    <span class="cart-icon">🛒</span>
+                    <span class="cart-count">@EstadoPedido.Items.Count</span>
+                    <span class="cart-total">$@EstadoPedido.PrecioTotal.ToString("N2")</span>
+                </div>
             </div>
         </div>
     </header>
@@ -46,7 +72,20 @@
     {
         if (EstadoPedido.Items.Count > 0)
         {
-            NavigationManager.NavigateTo("/checkout");
+            if (UsuarioService.UsuarioActual == null)
+            {
+                NavigationManager.NavigateTo("/login");
+            }
+            else
+            {
+                NavigationManager.NavigateTo("/checkout");
+            }
         }
+    }
+
+    private async Task Logout()
+    {
+        await UsuarioService.LogoutAsync();
+        NavigationManager.NavigateTo("/login");
     }
 }

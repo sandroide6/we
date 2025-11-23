@@ -7,6 +7,8 @@ public class Orden
     public string DireccionEntrega { get; set; } = string.Empty;
     public string NombreCliente { get; set; } = string.Empty;
     public string EmailCliente { get; set; } = string.Empty;
+    public int? UsuarioId { get; set; }
+    public Usuario? Usuario { get; set; }
     public List<ItemOrden> Items { get; set; } = new();
     
     public decimal PrecioTotal =>

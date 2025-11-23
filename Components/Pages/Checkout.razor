@@ -2,6 +2,7 @@
 @using Microsoft.EntityFrameworkCore
 @inject EstadoPedido EstadoPedido
 @inject TechStoreContext DbContext
+@inject UsuarioService UsuarioService
 @inject NavigationManager NavigationManager
 @rendermode InteractiveServer
 
@@ -10,7 +11,16 @@
 <div class="checkout-container">
     <h1>🛒 Finalizar Compra</h1>
 
-    @if (!EstadoPedido.Items.Any())
+    @if (UsuarioService.UsuarioActual == null)
+    {
+        <div class="empty-cart">
+            <div class="empty-icon">🔒</div>
+            <h2>Debes iniciar sesión</h2>
+            <p>Para realizar un pedido, necesitas estar autenticado en TechStore</p>
+            <a href="/login" class="btn-primary">Iniciar Sesión</a>
+        </div>
+    }
+    else if (!EstadoPedido.Items.Any())
     {
         <div class="empty-cart">
             <div class="empty-icon">🛍️</div>
@@ -138,6 +148,7 @@
         var especificacionesDb = especificacionesList.ToDictionary(e => e.Id);
 
         orden.FechaCreacion = DateTime.Now;
+        orden.UsuarioId = UsuarioService.UsuarioActual?.Id;
         orden.Items = EstadoPedido.Items.Select(item => new ItemOrden
         {
             ProductoTecnologicoId = item.ProductoTecnologicoId,

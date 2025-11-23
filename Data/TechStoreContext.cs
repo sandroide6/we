@@ -12,6 +12,7 @@ public class TechStoreContext : DbContext
 
     public DbSet<ProductoTecnologico> ProductosTecnologicos { get; set; } = null!;
     public DbSet<Especificacion> Especificaciones { get; set; } = null!;
+    public DbSet<Usuario> Usuarios { get; set; } = null!;
     public DbSet<Orden> Ordenes { get; set; } = null!;
     public DbSet<ItemOrden> ItemsOrden { get; set; } = null!;
 
