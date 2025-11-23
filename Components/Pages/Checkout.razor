@@ -1,6 +1,6 @@
 @page "/checkout"
 @using Microsoft.EntityFrameworkCore
-@inject EstadoPedido EstadoPedido
+@inject CarritoService Carrito
 @inject TechStoreContext DbContext
 @inject UsuarioService UsuarioService
 @inject NavigationManager NavigationManager
@@ -20,7 +20,7 @@
             <a href="/login" class="btn-primary">Iniciar Sesión</a>
         </div>
     }
-    else if (!EstadoPedido.Items.Any())
+    else if (!items.Any())
     {
         <div class="empty-cart">
             <div class="empty-icon">🛍️</div>
@@ -34,7 +34,7 @@
         <div class="checkout-grid">
             <div class="cart-items">
                 <h2>Productos en tu carrito</h2>
-                @foreach (var item in EstadoPedido.Items)
+                @foreach (var item in items)
                 {
                     <div class="cart-item">
                         <img src="@item.ProductoTecnologico?.ImagenUrl" alt="@item.ProductoTecnologico?.Nombre" />
@@ -95,7 +95,7 @@
                     <div class="order-total">
                         <div class="total-row">
                             <span>Subtotal:</span>
-                            <span>$@EstadoPedido.PrecioTotal.ToString("N2")</span>
+                            <span>$@precioTotal.ToString("N2")</span>
                         </div>
                         <div class="total-row">
                             <span>Envío:</span>
@@ -103,7 +103,7 @@
                         </div>
                         <div class="total-row total-final">
                             <strong>Total:</strong>
-                            <strong>$@EstadoPedido.PrecioTotal.ToString("N2")</strong>
+                            <strong>$@precioTotal.ToString("N2")</strong>
                         </div>
                     </div>
 
@@ -126,11 +126,15 @@
 @code {
     private Orden orden = new();
     private bool procesando = false;
+    private List<ItemOrden> items = new();
+    private decimal precioTotal = 0;
 
     protected override async Task OnInitializedAsync()
     {
-        // Recargar productos desde la BD en caso de que estén desconectados
-        var productIds = EstadoPedido.Items
+        items = await Carrito.ObtenerItems();
+        
+        // Recargar productos desde la BD
+        var productIds = items
             .Select(i => i.ProductoTecnologicoId)
             .Distinct()
             .ToList();
@@ -141,7 +145,7 @@
                 .Where(p => productIds.Contains(p.Id))
                 .ToDictionaryAsync(p => p.Id);
 
-            foreach (var item in EstadoPedido.Items)
+            foreach (var item in items)
             {
                 if (item.ProductoTecnologico == null && productosDb.ContainsKey(item.ProductoTecnologicoId))
                 {
@@ -149,18 +153,27 @@
                 }
             }
         }
+
+        CalcularTotal();
     }
 
-    private void RemoverItem(ItemOrden item)
+    private void CalcularTotal()
     {
-        EstadoPedido.RemoverItem(item);
+        precioTotal = items.Sum(i => i.PrecioTotal * i.Cantidad);
+    }
+
+    private async Task RemoverItem(ItemOrden item)
+    {
+        await Carrito.RemoverItem(item);
+        items = await Carrito.ObtenerItems();
+        CalcularTotal();
     }
 
     private async Task RealizarPedido()
     {
         procesando = true;
 
-        var especIds = EstadoPedido.Items
+        var especIds = items
             .SelectMany(i => i.EspecificacionesSeleccionadas)
             .Select(e => e.EspecificacionId)
             .Distinct()
@@ -173,7 +186,7 @@
 
         orden.FechaCreacion = DateTime.Now;
         orden.UsuarioId = UsuarioService.UsuarioActual?.Id;
-        orden.Items = EstadoPedido.Items.Select(item => new ItemOrden
+        orden.Items = items.Select(item => new ItemOrden
         {
             ProductoTecnologicoId = item.ProductoTecnologicoId,
             Cantidad = item.Cantidad,
@@ -189,7 +202,7 @@
         DbContext.Ordenes.Add(orden);
         await DbContext.SaveChangesAsync();
 
-        EstadoPedido.LimpiarCarrito();
+        await Carrito.LimpiarCarrito();
         
         procesando = false;
         NavigationManager.NavigateTo("/mis-pedidos");

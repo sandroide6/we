@@ -1,8 +1,7 @@
 @page "/"
 @using Microsoft.EntityFrameworkCore
 @inject TechStoreContext DbContext
-@inject EstadoPedido EstadoPedido
-@inject CarritoNotificador CarritoNotificador
+@inject CarritoService Carrito
 @rendermode InteractiveServer
 
 <PageTitle>TechStore - Catálogo de Productos</PageTitle>
@@ -133,8 +132,7 @@
 
     private async Task AgregarAlCarrito(ProductoTecnologico producto)
     {
-        EstadoPedido.AgregarProducto(producto);
-        await CarritoNotificador.NotificarCambio();
+        await Carrito.AgregarProducto(producto);
     }
 
     private void MostrarPersonalizacion(ProductoTecnologico producto)
@@ -175,9 +173,8 @@
                 }).ToList()
             };
             
-            EstadoPedido.AgregarItem(item);
+            await Carrito.AgregarItem(item);
             CerrarPersonalizacion();
-            await CarritoNotificador.NotificarCambio();
         }
     }
 }
