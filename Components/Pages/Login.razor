@@ -1,4 +1,5 @@
 @page "/login"
+@using System.ComponentModel.DataAnnotations
 @inject UsuarioService UsuarioService
 @inject NavigationManager NavigationManager
 @rendermode InteractiveServer
@@ -8,46 +9,79 @@
 <div class="auth-container">
     <div class="auth-card">
         <div class="auth-header">
-            <h1>🔐 Iniciar Sesión</h1>
+            <div class="auth-icon">🔐</div>
+            <h1>Iniciar Sesión</h1>
             <p>Bienvenido de vuelta a TechStore</p>
         </div>
 
         @if (!string.IsNullOrEmpty(mensaje))
         {
-            <div class="alert @(esError ? "alert-error" : "alert-success")">
-                @mensaje
+            <div class="alert @(esError ? "alert-error" : "alert-success") @animarMensaje">
+                <span class="alert-icon">@(esError ? "⚠️" : "✓")</span>
+                <span>@mensaje</span>
             </div>
         }
 
-        <EditForm Model="@login" OnValidSubmit="HandleLogin">
+        <EditForm Model="@login" OnValidSubmit="HandleLogin" class="auth-form">
             <DataAnnotationsValidator />
+            <ValidationSummary class="validation-summary" />
 
             <div class="form-group">
-                <label>📧 Email</label>
-                <InputText @bind-Value="login.Email" class="form-input" placeholder="tu@email.com" />
-                <ValidationMessage For="@(() => login.Email)" />
+                <label class="form-label">
+                    <span class="label-icon">📧</span>
+                    <span>Email</span>
+                </label>
+                <InputText @bind-Value="login.Email" 
+                          class="form-input" 
+                          placeholder="tu@email.com"
+                          autocomplete="email" />
+                <ValidationMessage For="@(() => login.Email)" class="validation-message" />
             </div>
 
             <div class="form-group">
-                <label>🔒 Contraseña</label>
-                <InputText @bind-Value="login.Contraseña" type="password" class="form-input" placeholder="Tu contraseña" />
-                <ValidationMessage For="@(() => login.Contraseña)" />
+                <label class="form-label">
+                    <span class="label-icon">🔒</span>
+                    <span>Contraseña</span>
+                </label>
+                <InputText @bind-Value="login.Contraseña" 
+                          type="password" 
+                          class="form-input" 
+                          placeholder="Tu contraseña"
+                          autocomplete="current-password" />
+                <ValidationMessage For="@(() => login.Contraseña)" class="validation-message" />
             </div>
 
-            <button type="submit" class="btn-login" disabled="@procesando">
+            <button type="submit" class="btn-submit" disabled="@procesando">
                 @if (procesando)
                 {
+                    <span class="spinner"></span>
                     <span>Iniciando sesión...</span>
                 }
                 else
                 {
-                    <span>✓ Iniciar Sesión</span>
+                    <span class="btn-icon">✓</span>
+                    <span>Iniciar Sesión</span>
                 }
             </button>
         </EditForm>
 
         <div class="auth-footer">
-            <p>¿No tienes cuenta? <a href="/register">Crea una aquí →</a></p>
+            <p>¿No tienes cuenta? <a href="/register" class="auth-link">Crea una aquí →</a></p>
+        </div>
+    </div>
+
+    <div class="auth-features">
+        <div class="feature-item">
+            <span class="feature-icon">🛡️</span>
+            <span>Seguro y encriptado</span>
+        </div>
+        <div class="feature-item">
+            <span class="feature-icon">⚡</span>
+            <span>Acceso instantáneo</span>
+        </div>
+        <div class="feature-item">
+            <span class="feature-icon">🎯</span>
+            <span>Compra rápida</span>
         </div>
     </div>
 </div>
@@ -57,25 +91,37 @@
     private string mensaje = "";
     private bool esError = false;
     private bool procesando = false;
+    private string animarMensaje = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (UsuarioService.UsuarioActual != null)
+        {
+            NavigationManager.NavigateTo("/");
+        }
+    }
 
     private async Task HandleLogin()
     {
         procesando = true;
         mensaje = "";
+        animarMensaje = "";
 
         var (éxito, msg) = await UsuarioService.LoginAsync(login.Email, login.Contraseña);
 
         if (éxito)
         {
-            mensaje = "¡Bienvenido!";
+            mensaje = msg;
             esError = false;
-            await Task.Delay(1000);
+            animarMensaje = "slide-in";
+            await Task.Delay(1500);
             NavigationManager.NavigateTo("/");
         }
         else
         {
             mensaje = msg;
             esError = true;
+            animarMensaje = "shake";
         }
 
         procesando = false;
@@ -83,7 +129,12 @@
 
     public class LoginModel
     {
+        [Required(ErrorMessage = "El email es requerido")]
+        [EmailAddress(ErrorMessage = "El formato del email no es válido")]
         public string Email { get; set; } = "";
+
+        [Required(ErrorMessage = "La contraseña es requerida")]
+        [MinLength(6, ErrorMessage = "La contraseña debe tener al menos 6 caracteres")]
         public string Contraseña { get; set; } = "";
     }
 }

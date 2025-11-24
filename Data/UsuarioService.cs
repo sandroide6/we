@@ -1,29 +1,64 @@
 using TechStore.Models;
 using Microsoft.EntityFrameworkCore;
 using BCrypt.Net;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using System.Security.Claims;
 
 namespace TechStore.Data;
 
 public class UsuarioService
 {
     private readonly TechStoreContext _dbContext;
+    private readonly IHttpContextAccessor _httpContextAccessor;
     public Usuario? UsuarioActual { get; set; }
     public event Action? OnChange;
 
-    public UsuarioService(TechStoreContext dbContext)
+    public UsuarioService(TechStoreContext dbContext, IHttpContextAccessor httpContextAccessor)
     {
         _dbContext = dbContext;
+        _httpContextAccessor = httpContextAccessor;
+    }
+
+    public async Task InicializarUsuarioActualAsync()
+    {
+        if (_httpContextAccessor.HttpContext?.User?.Identity?.IsAuthenticated == true)
+        {
+            var emailClaim = _httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.Email)?.Value;
+            if (!string.IsNullOrEmpty(emailClaim))
+            {
+                UsuarioActual = await _dbContext.Usuarios
+                    .Include(u => u.ProductosFavoritos)
+                    .Include(u => u.Ordenes)
+                    .FirstOrDefaultAsync(u => u.Email == emailClaim);
+            }
+        }
     }
 
     public async Task<(bool éxito, string mensaje)> RegistrarAsync(string email, string nombre, string apellido, string contraseña, string contraseñaConfirm)
     {
+        if (string.IsNullOrWhiteSpace(email))
+            return (false, "El email es requerido");
+
+        if (string.IsNullOrWhiteSpace(nombre))
+            return (false, "El nombre es requerido");
+
+        if (string.IsNullOrWhiteSpace(apellido))
+            return (false, "El apellido es requerido");
+
+        if (!EsEmailValido(email))
+            return (false, "El formato del email no es válido");
+
         if (contraseña != contraseñaConfirm)
             return (false, "Las contraseñas no coinciden");
 
-        if (contraseña.Length < 6)
-            return (false, "La contraseña debe tener al menos 6 caracteres");
+        if (contraseña.Length < 8)
+            return (false, "La contraseña debe tener al menos 8 caracteres");
 
-        var usuarioExistente = await _dbContext.Usuarios.FirstOrDefaultAsync(u => u.Email == email);
+        if (!TieneContraseñaSegura(contraseña))
+            return (false, "La contraseña debe contener al menos una mayúscula, una minúscula y un número");
+
+        var usuarioExistente = await _dbContext.Usuarios.FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower());
         if (usuarioExistente != null)
             return (false, "El email ya está registrado");
 
@@ -31,9 +66,9 @@ public class UsuarioService
 
         var usuario = new Usuario
         {
-            Email = email,
-            Nombre = nombre,
-            Apellido = apellido,
+            Email = email.ToLower(),
+            Nombre = nombre.Trim(),
+            Apellido = apellido.Trim(),
             Contraseña = HashContraseña(contraseña),
             AvatarUrl = avatarUrl,
             FechaRegistro = DateTime.Now
@@ -42,16 +77,25 @@ public class UsuarioService
         _dbContext.Usuarios.Add(usuario);
         await _dbContext.SaveChangesAsync();
 
+        await IniciarSesionConCookiesAsync(usuario);
+
         UsuarioActual = usuario;
         NotificarCambio();
-        return (true, "Registro exitoso");
+        return (true, "¡Cuenta creada exitosamente!");
     }
 
     public async Task<(bool éxito, string mensaje)> LoginAsync(string email, string contraseña)
     {
+        if (string.IsNullOrWhiteSpace(email))
+            return (false, "El email es requerido");
+
+        if (string.IsNullOrWhiteSpace(contraseña))
+            return (false, "La contraseña es requerida");
+
         var usuario = await _dbContext.Usuarios
             .Include(u => u.ProductosFavoritos)
-            .FirstOrDefaultAsync(u => u.Email == email && u.EstaActivo);
+            .Include(u => u.Ordenes)
+            .FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower() && u.EstaActivo);
 
         if (usuario == null)
             return (false, "Email o contraseña incorrectos");
@@ -62,16 +106,67 @@ public class UsuarioService
         usuario.UltimoLogin = DateTime.Now;
         await _dbContext.SaveChangesAsync();
 
+        await IniciarSesionConCookiesAsync(usuario);
+
         UsuarioActual = usuario;
         NotificarCambio();
-        return (true, "Login exitoso");
+        return (true, "¡Bienvenido de vuelta!");
     }
 
     public async Task LogoutAsync()
     {
+        if (_httpContextAccessor.HttpContext != null)
+        {
+            await _httpContextAccessor.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        }
         UsuarioActual = null;
         NotificarCambio();
-        await Task.CompletedTask;
+    }
+
+    private async Task IniciarSesionConCookiesAsync(Usuario usuario)
+    {
+        if (_httpContextAccessor.HttpContext == null)
+            return;
+
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, usuario.Id.ToString()),
+            new Claim(ClaimTypes.Email, usuario.Email),
+            new Claim(ClaimTypes.Name, usuario.NombreCompleto),
+            new Claim("AvatarUrl", usuario.AvatarUrl)
+        };
+
+        var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        var authProperties = new AuthenticationProperties
+        {
+            IsPersistent = true,
+            ExpiresUtc = DateTimeOffset.UtcNow.AddDays(30)
+        };
+
+        await _httpContextAccessor.HttpContext.SignInAsync(
+            CookieAuthenticationDefaults.AuthenticationScheme,
+            new ClaimsPrincipal(claimsIdentity),
+            authProperties);
+    }
+
+    private bool EsEmailValido(string email)
+    {
+        try
+        {
+            var addr = new System.Net.Mail.MailAddress(email);
+            return addr.Address == email;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private bool TieneContraseñaSegura(string contraseña)
+    {
+        return contraseña.Any(char.IsUpper) &&
+               contraseña.Any(char.IsLower) &&
+               contraseña.Any(char.IsDigit);
     }
 
     public async Task<Usuario?> ObtenerUsuarioPorIdAsync(int id)
@@ -119,7 +214,10 @@ public class UsuarioService
         if (contraseñaNueva != contraseñaConfirm)
             return false;
 
-        if (contraseñaNueva.Length < 6)
+        if (contraseñaNueva.Length < 8)
+            return false;
+
+        if (!TieneContraseñaSegura(contraseñaNueva))
             return false;
 
         usuario.Contraseña = HashContraseña(contraseñaNueva);

@@ -1,4 +1,5 @@
 @page "/perfil"
+@using System.ComponentModel.DataAnnotations
 @inject UsuarioService UsuarioService
 @inject NavigationManager NavigationManager
 @rendermode InteractiveServer
@@ -282,19 +283,41 @@ else
 
     public class PerfilModel
     {
+        [Required(ErrorMessage = "El email es requerido")]
+        [EmailAddress(ErrorMessage = "El formato del email no es válido")]
         public string Email { get; set; } = "";
+
+        [Required(ErrorMessage = "El nombre es requerido")]
+        [StringLength(50, MinimumLength = 2, ErrorMessage = "El nombre debe tener entre 2 y 50 caracteres")]
         public string Nombre { get; set; } = "";
+
+        [Required(ErrorMessage = "El apellido es requerido")]
+        [StringLength(50, MinimumLength = 2, ErrorMessage = "El apellido debe tener entre 2 y 50 caracteres")]
         public string Apellido { get; set; } = "";
+
+        [Phone(ErrorMessage = "El formato del teléfono no es válido")]
         public string Telefono { get; set; } = "";
+
         public string Dirección { get; set; } = "";
+
+        [StringLength(100, ErrorMessage = "La ciudad no puede exceder 100 caracteres")]
         public string Ciudad { get; set; } = "";
+
+        [StringLength(100, ErrorMessage = "El país no puede exceder 100 caracteres")]
         public string Pais { get; set; } = "";
     }
 
     public class CambioContraseñaModel
     {
+        [Required(ErrorMessage = "La contraseña actual es requerida")]
         public string ContraseñaActual { get; set; } = "";
+
+        [Required(ErrorMessage = "La nueva contraseña es requerida")]
+        [StringLength(100, MinimumLength = 8, ErrorMessage = "La contraseña debe tener al menos 8 caracteres")]
         public string ContraseñaNueva { get; set; } = "";
+
+        [Required(ErrorMessage = "Debes confirmar la nueva contraseña")]
+        [Compare("ContraseñaNueva", ErrorMessage = "Las contraseñas no coinciden")]
         public string ContraseñaConfirm { get; set; } = "";
     }
 }

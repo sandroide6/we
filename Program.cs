@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using TechStore.Data;
 using TechStore.Components;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,6 +10,22 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddDbContext<TechStoreContext>(options =>
     options.UseSqlite("Data Source=techstore.db"));
+
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.ExpireTimeSpan = TimeSpan.FromDays(30);
+        options.SlidingExpiration = true;
+        options.LoginPath = "/login";
+        options.LogoutPath = "/logout";
+        options.Cookie.Name = "TechStore.Auth";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = SameSiteMode.Strict;
+    });
+
+builder.Services.AddAuthorization();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddCascadingAuthenticationState();
 
 builder.Services.AddScoped<CarritoService>();
 builder.Services.AddScoped<UsuarioService>();
@@ -28,6 +45,9 @@ if (!app.Environment.IsDevelopment())
 
 app.UseStaticFiles();
 app.UseAntiforgery();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();

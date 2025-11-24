@@ -1,4 +1,5 @@
 @page "/register"
+@using System.ComponentModel.DataAnnotations
 @inject UsuarioService UsuarioService
 @inject NavigationManager NavigationManager
 @rendermode InteractiveServer
@@ -8,64 +9,122 @@
 <div class="auth-container">
     <div class="auth-card">
         <div class="auth-header">
-            <h1>🚀 Crear Cuenta</h1>
+            <div class="auth-icon">🚀</div>
+            <h1>Crear Cuenta</h1>
             <p>Únete a TechStore hoy mismo</p>
         </div>
 
         @if (!string.IsNullOrEmpty(mensaje))
         {
-            <div class="alert @(esError ? "alert-error" : "alert-success")">
-                @mensaje
+            <div class="alert @(esError ? "alert-error" : "alert-success") @animarMensaje">
+                <span class="alert-icon">@(esError ? "⚠️" : "✓")</span>
+                <span>@mensaje</span>
             </div>
         }
 
-        <EditForm Model="@registro" OnValidSubmit="HandleRegistro">
+        <EditForm Model="@registro" OnValidSubmit="HandleRegistro" class="auth-form">
             <DataAnnotationsValidator />
+            <ValidationSummary class="validation-summary" />
 
-            <div class="form-group">
-                <label>👤 Nombre</label>
-                <InputText @bind-Value="registro.Nombre" class="form-input" placeholder="Tu nombre" />
-                <ValidationMessage For="@(() => registro.Nombre)" />
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">
+                        <span class="label-icon">👤</span>
+                        <span>Nombre</span>
+                    </label>
+                    <InputText @bind-Value="registro.Nombre" 
+                              class="form-input" 
+                              placeholder="Tu nombre"
+                              autocomplete="given-name" />
+                    <ValidationMessage For="@(() => registro.Nombre)" class="validation-message" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <span class="label-icon">👤</span>
+                        <span>Apellido</span>
+                    </label>
+                    <InputText @bind-Value="registro.Apellido" 
+                              class="form-input" 
+                              placeholder="Tu apellido"
+                              autocomplete="family-name" />
+                    <ValidationMessage For="@(() => registro.Apellido)" class="validation-message" />
+                </div>
             </div>
 
             <div class="form-group">
-                <label>👤 Apellido</label>
-                <InputText @bind-Value="registro.Apellido" class="form-input" placeholder="Tu apellido" />
-                <ValidationMessage For="@(() => registro.Apellido)" />
+                <label class="form-label">
+                    <span class="label-icon">📧</span>
+                    <span>Email</span>
+                </label>
+                <InputText @bind-Value="registro.Email" 
+                          type="email" 
+                          class="form-input" 
+                          placeholder="tu@email.com"
+                          autocomplete="email" />
+                <ValidationMessage For="@(() => registro.Email)" class="validation-message" />
             </div>
 
             <div class="form-group">
-                <label>📧 Email</label>
-                <InputText @bind-Value="registro.Email" type="email" class="form-input" placeholder="tu@email.com" />
-                <ValidationMessage For="@(() => registro.Email)" />
+                <label class="form-label">
+                    <span class="label-icon">🔒</span>
+                    <span>Contraseña</span>
+                </label>
+                <InputText @bind-Value="registro.Contraseña" 
+                          type="password" 
+                          class="form-input" 
+                          placeholder="Mínimo 8 caracteres"
+                          autocomplete="new-password" />
+                <small class="form-hint">
+                    Debe contener al menos una mayúscula, una minúscula y un número
+                </small>
+                <ValidationMessage For="@(() => registro.Contraseña)" class="validation-message" />
             </div>
 
             <div class="form-group">
-                <label>🔒 Contraseña</label>
-                <InputText @bind-Value="registro.Contraseña" type="password" class="form-input" placeholder="Mínimo 6 caracteres" />
-                <ValidationMessage For="@(() => registro.Contraseña)" />
+                <label class="form-label">
+                    <span class="label-icon">🔒</span>
+                    <span>Confirmar Contraseña</span>
+                </label>
+                <InputText @bind-Value="registro.ContraseñaConfirm" 
+                          type="password" 
+                          class="form-input" 
+                          placeholder="Repite tu contraseña"
+                          autocomplete="new-password" />
+                <ValidationMessage For="@(() => registro.ContraseñaConfirm)" class="validation-message" />
             </div>
 
-            <div class="form-group">
-                <label>🔒 Confirmar Contraseña</label>
-                <InputText @bind-Value="registro.ContraseñaConfirm" type="password" class="form-input" placeholder="Repite tu contraseña" />
-                <ValidationMessage For="@(() => registro.ContraseñaConfirm)" />
-            </div>
-
-            <button type="submit" class="btn-login" disabled="@procesando">
+            <button type="submit" class="btn-submit" disabled="@procesando">
                 @if (procesando)
                 {
+                    <span class="spinner"></span>
                     <span>Creando cuenta...</span>
                 }
                 else
                 {
-                    <span>✓ Crear Cuenta</span>
+                    <span class="btn-icon">✓</span>
+                    <span>Crear Cuenta</span>
                 }
             </button>
         </EditForm>
 
         <div class="auth-footer">
-            <p>¿Ya tienes cuenta? <a href="/login">Inicia sesión →</a></p>
+            <p>¿Ya tienes cuenta? <a href="/login" class="auth-link">Inicia sesión →</a></p>
+        </div>
+    </div>
+
+    <div class="auth-features">
+        <div class="feature-item">
+            <span class="feature-icon">🎁</span>
+            <span>Ofertas exclusivas</span>
+        </div>
+        <div class="feature-item">
+            <span class="feature-icon">📦</span>
+            <span>Seguimiento de pedidos</span>
+        </div>
+        <div class="feature-item">
+            <span class="feature-icon">❤️</span>
+            <span>Lista de favoritos</span>
         </div>
     </div>
 </div>
@@ -75,11 +134,21 @@
     private string mensaje = "";
     private bool esError = false;
     private bool procesando = false;
+    private string animarMensaje = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (UsuarioService.UsuarioActual != null)
+        {
+            NavigationManager.NavigateTo("/");
+        }
+    }
 
     private async Task HandleRegistro()
     {
         procesando = true;
         mensaje = "";
+        animarMensaje = "";
 
         var (éxito, msg) = await UsuarioService.RegistrarAsync(
             registro.Email,
@@ -91,15 +160,17 @@
 
         if (éxito)
         {
-            mensaje = "¡Cuenta creada! Redirigiendo...";
+            mensaje = msg;
             esError = false;
-            await Task.Delay(1000);
+            animarMensaje = "slide-in";
+            await Task.Delay(1500);
             NavigationManager.NavigateTo("/");
         }
         else
         {
             mensaje = msg;
             esError = true;
+            animarMensaje = "shake";
         }
 
         procesando = false;
@@ -107,10 +178,24 @@
 
     public class RegistroModel
     {
+        [Required(ErrorMessage = "El nombre es requerido")]
+        [StringLength(50, MinimumLength = 2, ErrorMessage = "El nombre debe tener entre 2 y 50 caracteres")]
         public string Nombre { get; set; } = "";
+
+        [Required(ErrorMessage = "El apellido es requerido")]
+        [StringLength(50, MinimumLength = 2, ErrorMessage = "El apellido debe tener entre 2 y 50 caracteres")]
         public string Apellido { get; set; } = "";
+
+        [Required(ErrorMessage = "El email es requerido")]
+        [EmailAddress(ErrorMessage = "El formato del email no es válido")]
         public string Email { get; set; } = "";
+
+        [Required(ErrorMessage = "La contraseña es requerida")]
+        [StringLength(100, MinimumLength = 8, ErrorMessage = "La contraseña debe tener al menos 8 caracteres")]
         public string Contraseña { get; set; } = "";
+
+        [Required(ErrorMessage = "Debes confirmar tu contraseña")]
+        [Compare("Contraseña", ErrorMessage = "Las contraseñas no coinciden")]
         public string ContraseñaConfirm { get; set; } = "";
     }
 }
