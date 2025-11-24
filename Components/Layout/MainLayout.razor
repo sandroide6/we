@@ -1,8 +1,10 @@
 @inherits LayoutComponentBase
 @implements IDisposable
+@using Microsoft.JSInterop
 @inject CarritoService CarritoService
 @inject UsuarioService UsuarioService
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
 
 <div class="page">
     <header class="top-bar">
@@ -83,15 +85,6 @@
 </div>
 
 @code {
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await UsuarioService.InicializarAsync();
-            StateHasChanged();
-        }
-    }
-
     protected override void OnInitialized()
     {
         CarritoService.OnChange += StateHasChanged;
@@ -111,7 +104,14 @@
 
     private async Task Logout()
     {
-        await UsuarioService.LogoutAsync();
-        NavigationManager.NavigateTo("/login");
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("authFunctions.logout");
+            NavigationManager.NavigateTo("/login", forceLoad: true);
+        }
+        catch
+        {
+            NavigationManager.NavigateTo("/login", forceLoad: true);
+        }
     }
 }

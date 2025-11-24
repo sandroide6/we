@@ -1,46 +1,29 @@
 using TechStore.Models;
 using Microsoft.EntityFrameworkCore;
 using BCrypt.Net;
-using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
 namespace TechStore.Data;
 
 public class UsuarioService
 {
     private readonly TechStoreContext _dbContext;
-    private readonly ProtectedLocalStorage _localStorage;
-    private bool _inicializado = false;
+    private readonly IHttpContextAccessor _httpContextAccessor;
     
     public Usuario? UsuarioActual { get; set; }
     public event Action? OnChange;
 
-    public UsuarioService(TechStoreContext dbContext, ProtectedLocalStorage localStorage)
+    public UsuarioService(TechStoreContext dbContext, IHttpContextAccessor httpContextAccessor)
     {
         _dbContext = dbContext;
-        _localStorage = localStorage;
+        _httpContextAccessor = httpContextAccessor;
     }
 
-    public async Task InicializarAsync()
+    public void NotificarCambio()
     {
-        if (_inicializado)
-            return;
-
-        try
-        {
-            var resultado = await _localStorage.GetAsync<int>("usuarioId");
-            if (resultado.Success && resultado.Value > 0)
-            {
-                UsuarioActual = await ObtenerUsuarioPorIdAsync(resultado.Value);
-                NotificarCambio();
-            }
-        }
-        catch
-        {
-        }
-        finally
-        {
-            _inicializado = true;
-        }
+        OnChange?.Invoke();
     }
 
     public async Task<(bool éxito, string mensaje)> RegistrarAsync(string email, string nombre, string apellido, string contraseña, string contraseñaConfirm)
@@ -86,7 +69,7 @@ public class UsuarioService
         await _dbContext.SaveChangesAsync();
 
         UsuarioActual = usuario;
-        await _localStorage.SetAsync("usuarioId", usuario.Id);
+        await IniciarSesionCookieAsync(usuario);
         NotificarCambio();
         return (true, "¡Cuenta creada exitosamente!");
     }
@@ -114,7 +97,7 @@ public class UsuarioService
         await _dbContext.SaveChangesAsync();
 
         UsuarioActual = usuario;
-        await _localStorage.SetAsync("usuarioId", usuario.Id);
+        await IniciarSesionCookieAsync(usuario);
         NotificarCambio();
         return (true, "¡Bienvenido de vuelta!");
     }
@@ -122,8 +105,38 @@ public class UsuarioService
     public async Task LogoutAsync()
     {
         UsuarioActual = null;
-        await _localStorage.DeleteAsync("usuarioId");
+        var httpContext = _httpContextAccessor.HttpContext;
+        if (httpContext != null)
+        {
+            await httpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        }
         NotificarCambio();
+    }
+
+    private async Task IniciarSesionCookieAsync(Usuario usuario)
+    {
+        var httpContext = _httpContextAccessor.HttpContext;
+        if (httpContext == null)
+            return;
+
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, usuario.Id.ToString()),
+            new Claim(ClaimTypes.Name, usuario.NombreCompleto),
+            new Claim(ClaimTypes.Email, usuario.Email)
+        };
+
+        var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        var authProperties = new AuthenticationProperties
+        {
+            IsPersistent = true,
+            ExpiresUtc = DateTimeOffset.UtcNow.AddDays(30)
+        };
+
+        await httpContext.SignInAsync(
+            CookieAuthenticationDefaults.AuthenticationScheme,
+            new ClaimsPrincipal(claimsIdentity),
+            authProperties);
     }
 
     private bool EsEmailValido(string email)
@@ -273,10 +286,5 @@ public class UsuarioService
     private bool VerificaContraseña(string contraseña, string hash)
     {
         return BCrypt.Net.BCrypt.Verify(contraseña, hash);
-    }
-
-    private void NotificarCambio()
-    {
-        OnChange?.Invoke();
     }
 }

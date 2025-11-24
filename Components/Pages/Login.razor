@@ -1,7 +1,9 @@
 @page "/login"
 @using System.ComponentModel.DataAnnotations
+@using Microsoft.JSInterop
 @inject UsuarioService UsuarioService
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
 @rendermode InteractiveServer
 
 <PageTitle>Iniciar Sesión - TechStore</PageTitle>
@@ -93,9 +95,8 @@
     private bool procesando = false;
     private string animarMensaje = "";
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
-        await UsuarioService.InicializarAsync();
         if (UsuarioService.UsuarioActual != null)
         {
             NavigationManager.NavigateTo("/");
@@ -108,24 +109,39 @@
         mensaje = "";
         animarMensaje = "";
 
-        var (éxito, msg) = await UsuarioService.LoginAsync(login.Email, login.Contraseña);
+        try
+        {
+            var result = await JSRuntime.InvokeAsync<AuthResponse>("authFunctions.login", login.Email, login.Contraseña);
 
-        if (éxito)
-        {
-            mensaje = msg;
-            esError = false;
-            animarMensaje = "slide-in";
-            await Task.Delay(1500);
-            NavigationManager.NavigateTo("/");
+            if (result?.Success == true)
+            {
+                mensaje = result.Message;
+                esError = false;
+                animarMensaje = "slide-in";
+                await Task.Delay(1000);
+                NavigationManager.NavigateTo("/", forceLoad: true);
+            }
+            else
+            {
+                mensaje = result?.Message ?? "Error al iniciar sesión";
+                esError = true;
+                animarMensaje = "shake";
+            }
         }
-        else
+        catch
         {
-            mensaje = msg;
+            mensaje = "Error de conexión. Por favor intenta de nuevo.";
             esError = true;
             animarMensaje = "shake";
         }
 
         procesando = false;
+    }
+
+    private class AuthResponse
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = "";
     }
 
     public class LoginModel
