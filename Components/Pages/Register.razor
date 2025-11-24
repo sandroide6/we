@@ -138,6 +138,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await UsuarioService.InicializarAsync();
         if (UsuarioService.UsuarioActual != null)
         {
             NavigationManager.NavigateTo("/");

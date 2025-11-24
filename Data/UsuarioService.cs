@@ -1,18 +1,46 @@
 using TechStore.Models;
 using Microsoft.EntityFrameworkCore;
 using BCrypt.Net;
+using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 
 namespace TechStore.Data;
 
 public class UsuarioService
 {
     private readonly TechStoreContext _dbContext;
+    private readonly ProtectedLocalStorage _localStorage;
+    private bool _inicializado = false;
+    
     public Usuario? UsuarioActual { get; set; }
     public event Action? OnChange;
 
-    public UsuarioService(TechStoreContext dbContext)
+    public UsuarioService(TechStoreContext dbContext, ProtectedLocalStorage localStorage)
     {
         _dbContext = dbContext;
+        _localStorage = localStorage;
+    }
+
+    public async Task InicializarAsync()
+    {
+        if (_inicializado)
+            return;
+
+        try
+        {
+            var resultado = await _localStorage.GetAsync<int>("usuarioId");
+            if (resultado.Success && resultado.Value > 0)
+            {
+                UsuarioActual = await ObtenerUsuarioPorIdAsync(resultado.Value);
+                NotificarCambio();
+            }
+        }
+        catch
+        {
+        }
+        finally
+        {
+            _inicializado = true;
+        }
     }
 
     public async Task<(bool éxito, string mensaje)> RegistrarAsync(string email, string nombre, string apellido, string contraseña, string contraseñaConfirm)
@@ -58,6 +86,7 @@ public class UsuarioService
         await _dbContext.SaveChangesAsync();
 
         UsuarioActual = usuario;
+        await _localStorage.SetAsync("usuarioId", usuario.Id);
         NotificarCambio();
         return (true, "¡Cuenta creada exitosamente!");
     }
@@ -85,6 +114,7 @@ public class UsuarioService
         await _dbContext.SaveChangesAsync();
 
         UsuarioActual = usuario;
+        await _localStorage.SetAsync("usuarioId", usuario.Id);
         NotificarCambio();
         return (true, "¡Bienvenido de vuelta!");
     }
@@ -92,8 +122,8 @@ public class UsuarioService
     public async Task LogoutAsync()
     {
         UsuarioActual = null;
+        await _localStorage.DeleteAsync("usuarioId");
         NotificarCambio();
-        await Task.CompletedTask;
     }
 
     private bool EsEmailValido(string email)

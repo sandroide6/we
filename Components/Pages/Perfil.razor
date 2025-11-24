@@ -185,6 +185,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        await UsuarioService.InicializarAsync();
         if (UsuarioService.UsuarioActual != null)
         {
             var usuario = await UsuarioService.ObtenerUsuarioPorIdAsync(UsuarioService.UsuarioActual.Id);

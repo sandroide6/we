@@ -10,6 +10,15 @@ builder.Services.AddRazorComponents()
 builder.Services.AddDbContext<TechStoreContext>(options =>
     options.UseSqlite("Data Source=techstore.db"));
 
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromDays(30);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
+
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<CarritoService>();
 builder.Services.AddScoped<UsuarioService>();
 
@@ -27,6 +36,7 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseStaticFiles();
+app.UseSession();
 app.UseAntiforgery();
 
 app.MapRazorComponents<App>()
