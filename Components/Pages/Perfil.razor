@@ -17,7 +17,13 @@
 else
 {
     <div class="perfil-container">
-        <h1>👤 Mi Perfil</h1>
+        <div class="perfil-header">
+            <div class="avatar-section">
+                <img src="@UsuarioService.UsuarioActual.AvatarUrl" alt="@UsuarioService.UsuarioActual.NombreCompleto" class="avatar-large" />
+                <h1>@UsuarioService.UsuarioActual.NombreCompleto</h1>
+                <p class="user-email">@UsuarioService.UsuarioActual.Email</p>
+            </div>
+        </div>
 
         @if (!string.IsNullOrEmpty(mensaje))
         {
@@ -33,14 +39,16 @@ else
                 <EditForm Model="@perfilEdit" OnValidSubmit="GuardarPerfil">
                     <DataAnnotationsValidator />
 
-                    <div class="form-group">
-                        <label>Nombre</label>
-                        <InputText @bind-Value="perfilEdit.Nombre" class="form-input" />
-                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nombre</label>
+                            <InputText @bind-Value="perfilEdit.Nombre" class="form-input" placeholder="Tu nombre" />
+                        </div>
 
-                    <div class="form-group">
-                        <label>Apellido</label>
-                        <InputText @bind-Value="perfilEdit.Apellido" class="form-input" />
+                        <div class="form-group">
+                            <label>Apellido</label>
+                            <InputText @bind-Value="perfilEdit.Apellido" class="form-input" placeholder="Tu apellido" />
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -51,12 +59,24 @@ else
 
                     <div class="form-group">
                         <label>📞 Teléfono</label>
-                        <InputText @bind-Value="perfilEdit.Telefono" class="form-input" placeholder="+34 123 456 789" />
+                        <InputText @bind-Value="perfilEdit.Telefono" class="form-input" placeholder="+57 300 123 4567" />
                     </div>
 
                     <div class="form-group">
                         <label>📍 Dirección</label>
-                        <InputTextArea @bind-Value="perfilEdit.Dirección" class="form-input" rows="3" placeholder="Tu dirección de envío" />
+                        <InputTextArea @bind-Value="perfilEdit.Dirección" class="form-input" rows="2" placeholder="Tu dirección de envío" />
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>🏙️ Ciudad</label>
+                            <InputText @bind-Value="perfilEdit.Ciudad" class="form-input" placeholder="Tu ciudad" />
+                        </div>
+
+                        <div class="form-group">
+                            <label>🌍 País</label>
+                            <InputText @bind-Value="perfilEdit.Pais" class="form-input" placeholder="Tu país" />
+                        </div>
                     </div>
 
                     <button type="submit" class="btn-primary" disabled="@procesando">
@@ -73,27 +93,46 @@ else
             </div>
 
             <div class="perfil-card">
-                <h2>📊 Información de Cuenta</h2>
+                <h2>📊 Estadísticas de Cuenta</h2>
                 
-                <div class="info-row">
-                    <span class="label">Miembro desde:</span>
-                    <span class="value">@UsuarioService.UsuarioActual.FechaRegistro.ToString("dd/MM/yyyy")</span>
-                </div>
-
-                <div class="info-row">
-                    <span class="label">Total de pedidos:</span>
-                    <span class="value">@(UsuarioService.UsuarioActual.Ordenes?.Count ?? 0)</span>
-                </div>
-
-                @if (UsuarioService.UsuarioActual.UltimoLogin.HasValue)
-                {
-                    <div class="info-row">
-                        <span class="label">Último login:</span>
-                        <span class="value">@UsuarioService.UsuarioActual.UltimoLogin.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-icon">📅</div>
+                        <div class="stat-info">
+                            <div class="stat-label">Miembro desde</div>
+                            <div class="stat-value">@UsuarioService.UsuarioActual.FechaRegistro.ToString("dd MMM yyyy")</div>
+                        </div>
                     </div>
-                }
 
-                <hr />
+                    <div class="stat-box">
+                        <div class="stat-icon">📦</div>
+                        <div class="stat-info">
+                            <div class="stat-label">Total de pedidos</div>
+                            <div class="stat-value">@(UsuarioService.UsuarioActual.Ordenes?.Count ?? 0)</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-box">
+                        <div class="stat-icon">💰</div>
+                        <div class="stat-info">
+                            <div class="stat-label">Total gastado</div>
+                            <div class="stat-value">@UsuarioService.UsuarioActual.TotalGastado.ToString("C2")</div>
+                        </div>
+                    </div>
+
+                    @if (UsuarioService.UsuarioActual.UltimoLogin.HasValue)
+                    {
+                        <div class="stat-box">
+                            <div class="stat-icon">🕐</div>
+                            <div class="stat-info">
+                                <div class="stat-label">Último acceso</div>
+                                <div class="stat-value">@UsuarioService.UsuarioActual.UltimoLogin.Value.ToString("dd MMM HH:mm")</div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <hr class="divider" />
 
                 <h3>🔐 Cambiar Contraseña</h3>
 
@@ -102,21 +141,28 @@ else
 
                     <div class="form-group">
                         <label>Contraseña Actual</label>
-                        <InputText @bind-Value="cambioContraseña.ContraseñaActual" type="password" class="form-input" />
+                        <InputText @bind-Value="cambioContraseña.ContraseñaActual" type="password" class="form-input" placeholder="••••••••" />
                     </div>
 
                     <div class="form-group">
                         <label>Nueva Contraseña</label>
-                        <InputText @bind-Value="cambioContraseña.ContraseñaNueva" type="password" class="form-input" />
+                        <InputText @bind-Value="cambioContraseña.ContraseñaNueva" type="password" class="form-input" placeholder="••••••••" />
                     </div>
 
                     <div class="form-group">
                         <label>Confirmar Nueva Contraseña</label>
-                        <InputText @bind-Value="cambioContraseña.ContraseñaConfirm" type="password" class="form-input" />
+                        <InputText @bind-Value="cambioContraseña.ContraseñaConfirm" type="password" class="form-input" placeholder="••••••••" />
                     </div>
 
                     <button type="submit" class="btn-secondary" disabled="@procesandoContraseña">
-                        Cambiar Contraseña
+                        @if (procesandoContraseña)
+                        {
+                            <span>Cambiando...</span>
+                        }
+                        else
+                        {
+                            <span>Cambiar Contraseña</span>
+                        }
                     </button>
                 </EditForm>
             </div>
@@ -148,6 +194,8 @@ else
                 perfilEdit.Apellido = usuario.Apellido;
                 perfilEdit.Telefono = usuario.Telefono;
                 perfilEdit.Dirección = usuario.Dirección;
+                perfilEdit.Ciudad = usuario.Ciudad;
+                perfilEdit.Pais = usuario.Pais;
             }
         }
     }
@@ -162,7 +210,9 @@ else
             perfilEdit.Nombre,
             perfilEdit.Apellido,
             perfilEdit.Telefono,
-            perfilEdit.Dirección
+            perfilEdit.Dirección,
+            perfilEdit.Ciudad,
+            perfilEdit.Pais
         );
 
         if (resultado)
@@ -184,6 +234,24 @@ else
         procesandoContraseña = true;
         mensaje = "";
 
+        if (string.IsNullOrEmpty(cambioContraseña.ContraseñaActual) ||
+            string.IsNullOrEmpty(cambioContraseña.ContraseñaNueva) ||
+            string.IsNullOrEmpty(cambioContraseña.ContraseñaConfirm))
+        {
+            mensaje = "Todos los campos de contraseña son obligatorios";
+            esError = true;
+            procesandoContraseña = false;
+            return;
+        }
+
+        if (cambioContraseña.ContraseñaNueva != cambioContraseña.ContraseñaConfirm)
+        {
+            mensaje = "Las contraseñas nuevas no coinciden";
+            esError = true;
+            procesandoContraseña = false;
+            return;
+        }
+
         var resultado = await UsuarioService.CambiarContraseñaAsync(
             UsuarioService.UsuarioActual.Id,
             cambioContraseña.ContraseñaActual,
@@ -199,7 +267,7 @@ else
         }
         else
         {
-            mensaje = "Error al cambiar la contraseña";
+            mensaje = "Error: Verifica que la contraseña actual sea correcta y que la nueva tenga al menos 6 caracteres";
             esError = true;
         }
 
@@ -219,6 +287,8 @@ else
         public string Apellido { get; set; } = "";
         public string Telefono { get; set; } = "";
         public string Dirección { get; set; } = "";
+        public string Ciudad { get; set; } = "";
+        public string Pais { get; set; } = "";
     }
 
     public class CambioContraseñaModel

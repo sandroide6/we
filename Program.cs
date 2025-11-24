@@ -10,7 +10,7 @@ builder.Services.AddRazorComponents()
 builder.Services.AddDbContext<TechStoreContext>(options =>
     options.UseSqlite("Data Source=techstore.db"));
 
-builder.Services.AddScoped<EstadoPedido>();
+builder.Services.AddScoped<CarritoService>();
 builder.Services.AddScoped<UsuarioService>();
 
 var app = builder.Build();

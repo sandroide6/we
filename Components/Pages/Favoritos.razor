@@ -1,0 +1,107 @@
+@page "/favoritos"
+@using Microsoft.EntityFrameworkCore
+@inject UsuarioService UsuarioService
+@inject CarritoService CarritoService
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+
+<PageTitle>Mis Favoritos - TechStore</PageTitle>
+
+@if (UsuarioService.UsuarioActual == null)
+{
+    <div class="empty-state">
+        <div class="empty-icon">🔒</div>
+        <h2>Debes iniciar sesión</h2>
+        <p>Para ver tus productos favoritos, necesitas estar autenticado</p>
+        <a href="/login" class="btn-primary">Iniciar Sesión</a>
+    </div>
+}
+else
+{
+    <div class="favoritos-container">
+        <div class="page-header">
+            <h1>❤️ Mis Productos Favoritos</h1>
+            <p class="subtitle">Aquí están todos los productos que has marcado como favoritos</p>
+        </div>
+
+        @if (!productosFavoritos.Any())
+        {
+            <div class="empty-state">
+                <div class="empty-icon">❤️</div>
+                <h2>No tienes favoritos aún</h2>
+                <p>Explora nuestro catálogo y marca tus productos favoritos</p>
+                <a href="/" class="btn-primary">Ver Catálogo</a>
+            </div>
+        }
+        else
+        {
+            <div class="products-grid">
+                @foreach (var producto in productosFavoritos)
+                {
+                    <div class="product-card">
+                        <button class="btn-favorito activo" @onclick="() => RemoverFavorito(producto.Id)">
+                            ❤️
+                        </button>
+                        
+                        <div class="product-image" style="background-image: url('@producto.ImagenUrl')"></div>
+                        <div class="product-content">
+                            <span class="product-badge">@producto.Tipo.ToString()</span>
+                            <h3 class="product-title">@producto.Nombre</h3>
+                            <p class="product-description">@producto.Descripcion</p>
+                            <div class="product-footer">
+                                <div class="product-price">
+                                    <span class="price-label">Desde</span>
+                                    <span class="price-value">@producto.PrecioBase.ToString("C2")</span>
+                                </div>
+                                @if (producto.EspecificacionesDisponibles.Any())
+                                {
+                                    <button class="btn-customize" @onclick="() => IrADetalles(producto.Id)">
+                                        Ver Detalles
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button class="btn-add" @onclick="() => AgregarAlCarrito(producto)">
+                                        Agregar al Carrito
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<ProductoTecnologico> productosFavoritos = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (UsuarioService.UsuarioActual != null)
+        {
+            productosFavoritos = await UsuarioService.ObtenerFavoritosAsync(UsuarioService.UsuarioActual.Id);
+        }
+    }
+
+    private async Task RemoverFavorito(int productoId)
+    {
+        if (UsuarioService.UsuarioActual != null)
+        {
+            await UsuarioService.RemoverDeFavoritosAsync(UsuarioService.UsuarioActual.Id, productoId);
+            productosFavoritos = await UsuarioService.ObtenerFavoritosAsync(UsuarioService.UsuarioActual.Id);
+        }
+    }
+
+    private void AgregarAlCarrito(ProductoTecnologico producto)
+    {
+        CarritoService.AgregarProducto(producto);
+    }
+
+    private void IrADetalles(int productoId)
+    {
+        NavigationManager.NavigateTo("/");
+    }
+}
+

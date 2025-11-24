@@ -1,0 +1,90 @@
+@using Microsoft.AspNetCore.Components
+@inject CarritoService CarritoService
+@inject NavigationManager NavigationManager
+@implements IDisposable
+@rendermode InteractiveServer
+
+<div class="carrito-floating @(mostrarCarrito ? "mostrar" : "")">
+    <button class="carrito-toggle" @onclick="ToggleCarrito">
+        <span class="carrito-icon">🛒</span>
+        @if (CarritoService.CantidadTotal > 0)
+        {
+            <span class="carrito-badge">@CarritoService.CantidadTotal</span>
+        }
+    </button>
+
+    @if (mostrarCarrito)
+    {
+        <div class="carrito-dropdown">
+            <div class="carrito-header">
+                <h3>Mi Carrito</h3>
+                <button class="btn-cerrar" @onclick="ToggleCarrito">×</button>
+            </div>
+
+            @if (!CarritoService.Items.Any())
+            {
+                <div class="carrito-vacio">
+                    <div class="empty-icon">🛍️</div>
+                    <p>Tu carrito está vacío</p>
+                </div>
+            }
+            else
+            {
+                <div class="carrito-items">
+                    @foreach (var item in CarritoService.Items)
+                    {
+                        <div class="carrito-item-mini">
+                            <img src="@item.ProductoTecnologico?.ImagenUrl" alt="@item.ProductoTecnologico?.Nombre" />
+                            <div class="item-info">
+                                <h4>@item.ProductoTecnologico?.Nombre</h4>
+                                <p class="item-cantidad">Cantidad: @item.Cantidad</p>
+                                <p class="item-precio">@((item.PrecioTotal * item.Cantidad).ToString("C2"))</p>
+                            </div>
+                            <button class="btn-remove-mini" @onclick="() => RemoverItem(item)">×</button>
+                        </div>
+                    }
+                </div>
+
+                <div class="carrito-footer">
+                    <div class="total-row">
+                        <strong>Total:</strong>
+                        <strong>@CarritoService.PrecioTotal.ToString("C2")</strong>
+                    </div>
+                    <button class="btn-checkout" @onclick="IrACheckout">
+                        Finalizar Compra
+                    </button>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private bool mostrarCarrito = false;
+
+    protected override void OnInitialized()
+    {
+        CarritoService.OnChange += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        CarritoService.OnChange -= StateHasChanged;
+    }
+
+    private void ToggleCarrito()
+    {
+        mostrarCarrito = !mostrarCarrito;
+    }
+
+    private void RemoverItem(ItemOrden item)
+    {
+        CarritoService.RemoverItem(item);
+    }
+
+    private void IrACheckout()
+    {
+        mostrarCarrito = false;
+        NavigationManager.NavigateTo("/checkout");
+    }
+}

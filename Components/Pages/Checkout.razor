@@ -1,7 +1,7 @@
 @page "/checkout"
 @using Microsoft.EntityFrameworkCore
 @implements IDisposable
-@inject EstadoPedido EstadoPedido
+@inject CarritoService CarritoService
 @inject TechStoreContext DbContext
 @inject UsuarioService UsuarioService
 @inject NavigationManager NavigationManager
@@ -21,7 +21,7 @@
             <a href="/login" class="btn-primary">Iniciar Sesión</a>
         </div>
     }
-    else if (!EstadoPedido.Items.Any())
+    else if (!CarritoService.Items.Any())
     {
         <div class="empty-cart">
             <div class="empty-icon">🛍️</div>
@@ -35,7 +35,7 @@
         <div class="checkout-grid">
             <div class="cart-items">
                 <h2>Productos en tu carrito</h2>
-                @foreach (var item in EstadoPedido.Items)
+                @foreach (var item in CarritoService.Items)
                 {
                     <div class="cart-item">
                         <img src="@item.ProductoTecnologico?.ImagenUrl" alt="@item.ProductoTecnologico?.Nombre" />
@@ -58,10 +58,15 @@
                             
                             <div class="item-quantity">
                                 <label>Cantidad:</label>
-                                <input type="number" 
-                                       min="1" 
-                                       value="@item.Cantidad" 
-                                       @oninput="@((e) => ActualizarCantidad(item, e.Value?.ToString()))" />
+                                <div class="quantity-controls">
+                                    <button class="qty-btn" @onclick="() => ActualizarCantidad(item, item.Cantidad - 1)">-</button>
+                                    <input type="number" 
+                                           min="1" 
+                                           value="@item.Cantidad" 
+                                           @oninput="@((e) => ActualizarCantidad(item, e.Value?.ToString()))"
+                                           class="qty-input" />
+                                    <button class="qty-btn" @onclick="() => ActualizarCantidad(item, item.Cantidad + 1)">+</button>
+                                </div>
                             </div>
                         </div>
                         <div class="item-actions">
@@ -80,7 +85,7 @@
                     
                     <div class="form-group">
                         <label>Nombre Completo</label>
-                        <InputText @bind-Value="orden.NombreCliente" class="form-input" placeholder="Tu nombre" />
+                        <InputText @bind-Value="orden.NombreCliente" class="form-input" placeholder="Tu nombre completo" />
                         <ValidationMessage For="@(() => orden.NombreCliente)" />
                     </div>
 
@@ -91,30 +96,41 @@
                     </div>
 
                     <div class="form-group">
+                        <label>Teléfono</label>
+                        <InputText @bind-Value="orden.TelefonoCliente" class="form-input" placeholder="+57 300 123 4567" />
+                        <ValidationMessage For="@(() => orden.TelefonoCliente)" />
+                    </div>
+
+                    <div class="form-group">
                         <label>Dirección de Entrega</label>
                         <InputTextArea @bind-Value="orden.DireccionEntrega" class="form-input" rows="3" placeholder="Calle, Ciudad, País" />
                         <ValidationMessage For="@(() => orden.DireccionEntrega)" />
                     </div>
 
+                    <div class="form-group">
+                        <label>Notas del Pedido (Opcional)</label>
+                        <InputTextArea @bind-Value="orden.NotasOrden" class="form-input" rows="2" placeholder="Instrucciones especiales de entrega..." />
+                    </div>
+
                     <div class="order-total">
                         <div class="total-row">
-                            <span>Subtotal:</span>
-                            <span>@EstadoPedido.PrecioTotal.ToString("C2")</span>
+                            <span>Subtotal (@CarritoService.CantidadTotal items):</span>
+                            <span>@CarritoService.PrecioTotal.ToString("C2")</span>
                         </div>
                         <div class="total-row">
                             <span>Envío:</span>
-                            <span>GRATIS</span>
+                            <span class="free-shipping">GRATIS</span>
                         </div>
                         <div class="total-row total-final">
                             <strong>Total:</strong>
-                            <strong>@EstadoPedido.PrecioTotal.ToString("C2")</strong>
+                            <strong>@CarritoService.PrecioTotal.ToString("C2")</strong>
                         </div>
                     </div>
 
                     <button type="submit" class="btn-checkout" disabled="@procesando">
                         @if (procesando)
                         {
-                            <span>Procesando...</span>
+                            <span>⏳ Procesando...</span>
                         }
                         else
                         {
@@ -133,24 +149,37 @@
 
     protected override void OnInitialized()
     {
-        EstadoPedido.OnChange += StateHasChanged;
+        CarritoService.OnChange += StateHasChanged;
+        
+        if (UsuarioService.UsuarioActual != null)
+        {
+            orden.NombreCliente = UsuarioService.UsuarioActual.NombreCompleto;
+            orden.EmailCliente = UsuarioService.UsuarioActual.Email;
+            orden.TelefonoCliente = UsuarioService.UsuarioActual.Telefono;
+            orden.DireccionEntrega = UsuarioService.UsuarioActual.Dirección;
+        }
     }
 
     public void Dispose()
     {
-        EstadoPedido.OnChange -= StateHasChanged;
+        CarritoService.OnChange -= StateHasChanged;
     }
 
     private void RemoverItem(ItemOrden item)
     {
-        EstadoPedido.RemoverItem(item);
+        CarritoService.RemoverItem(item);
+    }
+
+    private void ActualizarCantidad(ItemOrden item, int cantidad)
+    {
+        CarritoService.ActualizarCantidad(item, cantidad);
     }
 
     private void ActualizarCantidad(ItemOrden item, string? valor)
     {
         if (int.TryParse(valor, out int cantidad))
         {
-            EstadoPedido.ActualizarCantidad(item, cantidad);
+            CarritoService.ActualizarCantidad(item, cantidad);
         }
     }
 
@@ -158,9 +187,8 @@
     {
         procesando = true;
 
-        // Cargar los productos y especificaciones desde la base de datos
-        var productosIds = EstadoPedido.Items.Select(i => i.ProductoTecnologicoId).Distinct().ToList();
-        var especIds = EstadoPedido.Items
+        var productosIds = CarritoService.Items.Select(i => i.ProductoTecnologicoId).Distinct().ToList();
+        var especIds = CarritoService.Items
             .SelectMany(i => i.EspecificacionesSeleccionadas)
             .Select(e => e.EspecificacionId)
             .Distinct()
@@ -176,15 +204,16 @@
 
         orden.FechaCreacion = DateTime.Now;
         orden.UsuarioId = UsuarioService.UsuarioActual?.Id;
+        orden.Estado = EstadoOrden.Pendiente;
         
-        // Crear una copia del pedido con todos los datos cargados para WhatsApp
         var ordenParaWhatsApp = new Orden
         {
             NombreCliente = orden.NombreCliente,
             EmailCliente = orden.EmailCliente,
+            TelefonoCliente = orden.TelefonoCliente,
             DireccionEntrega = orden.DireccionEntrega,
             FechaCreacion = orden.FechaCreacion,
-            Items = EstadoPedido.Items.Select(item => new ItemOrden
+            Items = CarritoService.Items.Select(item => new ItemOrden
             {
                 ProductoTecnologicoId = item.ProductoTecnologicoId,
                 ProductoTecnologico = productosDb.GetValueOrDefault(item.ProductoTecnologicoId),
@@ -199,8 +228,7 @@
             }).ToList()
         };
 
-        // Crear items para guardar en la base de datos (sin referencias de navegación)
-        orden.Items = EstadoPedido.Items.Select(item => new ItemOrden
+        orden.Items = CarritoService.Items.Select(item => new ItemOrden
         {
             ProductoTecnologicoId = item.ProductoTecnologicoId,
             Cantidad = item.Cantidad,
@@ -215,26 +243,25 @@
         DbContext.Ordenes.Add(orden);
         await DbContext.SaveChangesAsync();
 
-        // Generar mensaje de WhatsApp con detalles del pedido
         var mensajeWhatsApp = GenerarMensajeWhatsApp(ordenParaWhatsApp);
-        var numeroWhatsApp = "573003895839"; // Formato internacional de Colombia
+        var numeroWhatsApp = "573003895839";
         var urlWhatsApp = $"https://wa.me/{numeroWhatsApp}?text={Uri.EscapeDataString(mensajeWhatsApp)}";
 
-        EstadoPedido.LimpiarCarrito();
+        CarritoService.LimpiarCarrito();
         
         procesando = false;
         
-        // Redirigir a WhatsApp
         NavigationManager.NavigateTo(urlWhatsApp, true);
     }
 
     private string GenerarMensajeWhatsApp(Orden orden)
     {
         var mensaje = $"¡Hola! 👋 Acabo de realizar un pedido en TechStore\n\n";
-        mensaje += $"📋 *Detalles del Pedido*\n";
+        mensaje += $"📋 *Detalles del Pedido #{orden.Id}*\n";
         mensaje += $"━━━━━━━━━━━━━━━━\n";
         mensaje += $"👤 Cliente: {orden.NombreCliente}\n";
         mensaje += $"📧 Email: {orden.EmailCliente}\n";
+        mensaje += $"📞 Teléfono: {orden.TelefonoCliente}\n";
         mensaje += $"📍 Dirección: {orden.DireccionEntrega}\n\n";
         
         mensaje += $"🛒 *Productos:*\n";

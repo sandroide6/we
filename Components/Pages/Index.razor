@@ -1,7 +1,8 @@
 @page "/"
 @using Microsoft.EntityFrameworkCore
 @inject TechStoreContext DbContext
-@inject EstadoPedido EstadoPedido
+@inject CarritoService CarritoService
+@inject UsuarioService UsuarioService
 @rendermode InteractiveServer
 
 <PageTitle>TechStore - Catálogo de Productos</PageTitle>
@@ -11,25 +12,45 @@
     <p class="subtitle">Descubre los mejores productos de tecnología para tu negocio o proyecto personal</p>
 </div>
 
-<div class="category-filters">
-    <button class="filter-btn @(categoriaSeleccionada == "Todos" ? "active" : "")" @onclick='() => FiltrarCategoria("Todos")'>
-        Todos los Productos
-    </button>
-    <button class="filter-btn @(categoriaSeleccionada == "Hardware" ? "active" : "")" @onclick='() => FiltrarCategoria("Hardware")'>
-        💻 Hardware
-    </button>
-    <button class="filter-btn @(categoriaSeleccionada == "Software" ? "active" : "")" @onclick='() => FiltrarCategoria("Software")'>
-        📦 Software
-    </button>
-    <button class="filter-btn @(categoriaSeleccionada == "Servicio" ? "active" : "")" @onclick='() => FiltrarCategoria("Servicio")'>
-        🛠️ Servicios TI
-    </button>
+<div class="search-filter-bar">
+    <div class="search-box">
+        <input type="text" 
+               placeholder="Buscar productos..." 
+               @bind="terminoBusqueda" 
+               @bind:event="oninput"
+               @bind:after="FiltrarProductos"
+               class="search-input" />
+        <span class="search-icon">🔍</span>
+    </div>
+
+    <div class="category-filters">
+        <button class="filter-btn @(categoriaSeleccionada == "Todos" ? "active" : "")" @onclick='() => FiltrarCategoria("Todos")'>
+            Todos
+        </button>
+        <button class="filter-btn @(categoriaSeleccionada == "Hardware" ? "active" : "")" @onclick='() => FiltrarCategoria("Hardware")'>
+            💻 Hardware
+        </button>
+        <button class="filter-btn @(categoriaSeleccionada == "Software" ? "active" : "")" @onclick='() => FiltrarCategoria("Software")'>
+            📦 Software
+        </button>
+        <button class="filter-btn @(categoriaSeleccionada == "Servicio" ? "active" : "")" @onclick='() => FiltrarCategoria("Servicio")'>
+            🛠️ Servicios
+        </button>
+    </div>
 </div>
 
 <div class="products-grid">
     @foreach (var producto in productosFiltrados)
     {
         <div class="product-card">
+            @if (UsuarioService.UsuarioActual != null)
+            {
+                <button class="btn-favorito @(productosFavoritos.Contains(producto.Id) ? "activo" : "")" 
+                        @onclick="() => ToggleFavorito(producto.Id)">
+                    @(productosFavoritos.Contains(producto.Id) ? "❤️" : "🤍")
+                </button>
+            }
+            
             <div class="product-image" style="background-image: url('@producto.ImagenUrl')"></div>
             <div class="product-content">
                 <span class="product-badge">@producto.Tipo.ToString()</span>
@@ -49,7 +70,7 @@
                     else
                     {
                         <button class="btn-add" @onclick="() => AgregarAlCarrito(producto)">
-                            Agregar
+                            Agregar al Carrito
                         </button>
                     }
                 </div>
@@ -57,6 +78,15 @@
         </div>
     }
 </div>
+
+@if (productosFiltrados.Count == 0)
+{
+    <div class="empty-state">
+        <div class="empty-icon">🔍</div>
+        <h2>No se encontraron productos</h2>
+        <p>Intenta con otros términos de búsqueda o categorías</p>
+    </div>
+}
 
 @if (productoPersonalizar != null)
 {
@@ -110,7 +140,9 @@
 @code {
     private List<ProductoTecnologico> productos = new();
     private List<ProductoTecnologico> productosFiltrados = new();
+    private HashSet<int> productosFavoritos = new();
     private string categoriaSeleccionada = "Todos";
+    private string terminoBusqueda = "";
     private ProductoTecnologico? productoPersonalizar;
     private HashSet<Especificacion> especificacionesSeleccionadas = new();
 
@@ -120,19 +152,34 @@
             .Include(p => p.EspecificacionesDisponibles)
             .ToListAsync();
         productosFiltrados = productos;
+
+        if (UsuarioService.UsuarioActual != null)
+        {
+            var favoritos = await UsuarioService.ObtenerFavoritosAsync(UsuarioService.UsuarioActual.Id);
+            productosFavoritos = favoritos.Select(f => f.Id).ToHashSet();
+        }
     }
 
     private void FiltrarCategoria(string categoria)
     {
         categoriaSeleccionada = categoria;
-        productosFiltrados = categoria == "Todos" 
-            ? productos 
-            : productos.Where(p => p.Tipo.ToString() == categoria).ToList();
+        FiltrarProductos();
+    }
+
+    private void FiltrarProductos()
+    {
+        productosFiltrados = productos
+            .Where(p => 
+                (categoriaSeleccionada == "Todos" || p.Tipo.ToString() == categoriaSeleccionada) &&
+                (string.IsNullOrWhiteSpace(terminoBusqueda) || 
+                 p.Nombre.Contains(terminoBusqueda, StringComparison.OrdinalIgnoreCase) ||
+                 p.Descripcion.Contains(terminoBusqueda, StringComparison.OrdinalIgnoreCase)))
+            .ToList();
     }
 
     private void AgregarAlCarrito(ProductoTecnologico producto)
     {
-        EstadoPedido.AgregarProducto(producto);
+        CarritoService.AgregarProducto(producto);
     }
 
     private void MostrarPersonalizacion(ProductoTecnologico producto)
@@ -173,8 +220,25 @@
                 }).ToList()
             };
             
-            EstadoPedido.AgregarItem(item);
+            CarritoService.AgregarItem(item);
             CerrarPersonalizacion();
+        }
+    }
+
+    private async Task ToggleFavorito(int productoId)
+    {
+        if (UsuarioService.UsuarioActual == null)
+            return;
+
+        if (productosFavoritos.Contains(productoId))
+        {
+            await UsuarioService.RemoverDeFavoritosAsync(UsuarioService.UsuarioActual.Id, productoId);
+            productosFavoritos.Remove(productoId);
+        }
+        else
+        {
+            await UsuarioService.AgregarAFavoritosAsync(UsuarioService.UsuarioActual.Id, productoId);
+            productosFavoritos.Add(productoId);
         }
     }
 }

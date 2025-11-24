@@ -1,6 +1,6 @@
 @inherits LayoutComponentBase
 @implements IDisposable
-@inject EstadoPedido EstadoPedido
+@inject CarritoService CarritoService
 @inject UsuarioService UsuarioService
 @inject NavigationManager NavigationManager
 
@@ -17,6 +17,7 @@
                 @if (UsuarioService.UsuarioActual != null)
                 {
                     <a href="/mis-pedidos" class="nav-link @(IsActive("/mis-pedidos") ? "active" : "")">Mis Pedidos</a>
+                    <a href="/favoritos" class="nav-link @(IsActive("/favoritos") ? "active" : "")">❤️ Favoritos</a>
                 }
             </nav>
 
@@ -24,12 +25,14 @@
                 @if (UsuarioService.UsuarioActual != null)
                 {
                     <div class="user-menu">
-                        <span class="user-greeting">👤 @UsuarioService.UsuarioActual.Nombre</span>
+                        <img src="@UsuarioService.UsuarioActual.AvatarUrl" alt="@UsuarioService.UsuarioActual.Nombre" class="user-avatar" />
+                        <span class="user-greeting">@UsuarioService.UsuarioActual.Nombre</span>
                         <div class="user-dropdown">
-                            <a href="/perfil" class="dropdown-item">Mi Perfil</a>
-                            <a href="/mis-pedidos" class="dropdown-item">Mis Pedidos</a>
+                            <a href="/perfil" class="dropdown-item">👤 Mi Perfil</a>
+                            <a href="/mis-pedidos" class="dropdown-item">📦 Mis Pedidos</a>
+                            <a href="/favoritos" class="dropdown-item">❤️ Favoritos</a>
                             <hr />
-                            <button @onclick="Logout" class="dropdown-item logout-btn">Cerrar Sesión</button>
+                            <button @onclick="Logout" class="dropdown-item logout-btn">🚪 Cerrar Sesión</button>
                         </div>
                     </div>
                 }
@@ -40,21 +43,6 @@
                         <a href="/register" class="btn-register-header">Registrarse</a>
                     </div>
                 }
-
-                <div class="cart-summary @(EstadoPedido.Items.Count > 0 ? "has-items" : "")" @onclick="NavigateToCheckout">
-                    <span class="cart-icon">🛒</span>
-                    @if (EstadoPedido.Items.Count > 0)
-                    {
-                        <div class="cart-info">
-                            <span class="cart-count">@EstadoPedido.Items.Count @(EstadoPedido.Items.Count == 1 ? "item" : "items")</span>
-                            <span class="cart-total">@EstadoPedido.PrecioTotal.ToString("C2")</span>
-                        </div>
-                    }
-                    else
-                    {
-                        <span class="cart-empty">Vacío</span>
-                    }
-                </div>
             </div>
         </div>
     </header>
@@ -65,9 +53,31 @@
         </div>
     </main>
 
+    <CarritoFloating />
+
     <footer class="footer">
         <div class="container">
-            <p>&copy; 2024 TechStore - Tu tienda de tecnología de confianza</p>
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>TechStore</h3>
+                    <p>Tu tienda de tecnología de confianza</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Enlaces</h4>
+                    <a href="/">Catálogo</a>
+                    <a href="/about">Sobre Nosotros</a>
+                    <a href="/contact">Contacto</a>
+                </div>
+                <div class="footer-section">
+                    <h4>Soporte</h4>
+                    <a href="/help">Ayuda</a>
+                    <a href="/shipping">Envíos</a>
+                    <a href="/returns">Devoluciones</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 TechStore - Todos los derechos reservados</p>
+            </div>
         </div>
     </footer>
 </div>
@@ -75,32 +85,19 @@
 @code {
     protected override void OnInitialized()
     {
-        EstadoPedido.OnChange += StateHasChanged;
+        CarritoService.OnChange += StateHasChanged;
+        UsuarioService.OnChange += StateHasChanged;
     }
 
     public void Dispose()
     {
-        EstadoPedido.OnChange -= StateHasChanged;
+        CarritoService.OnChange -= StateHasChanged;
+        UsuarioService.OnChange -= StateHasChanged;
     }
 
     private bool IsActive(string path)
     {
         return NavigationManager.Uri.EndsWith(path);
-    }
-
-    private void NavigateToCheckout()
-    {
-        if (EstadoPedido.Items.Count > 0)
-        {
-            if (UsuarioService.UsuarioActual == null)
-            {
-                NavigationManager.NavigateTo("/login");
-            }
-            else
-            {
-                NavigationManager.NavigateTo("/checkout");
-            }
-        }
     }
 
     private async Task Logout()

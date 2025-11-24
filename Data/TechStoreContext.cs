@@ -15,6 +15,7 @@ public class TechStoreContext : DbContext
     public DbSet<Usuario> Usuarios { get; set; } = null!;
     public DbSet<Orden> Ordenes { get; set; } = null!;
     public DbSet<ItemOrden> ItemsOrden { get; set; } = null!;
+    public DbSet<ProductoFavorito> ProductosFavoritos { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -100,6 +101,26 @@ public class TechStoreContext : DbContext
                 ImagenUrl = "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=400",
                 Tipo = TipoProducto.Servicio,
                 Categoria = "Servicios TI"
+            },
+            new ProductoTecnologico
+            {
+                Id = 9,
+                Nombre = "iPhone 15 Pro Max",
+                Descripcion = "El último smartphone de Apple con chip A17 Pro y cámara de 48MP",
+                PrecioBase = 1199.99m,
+                ImagenUrl = "https://images.unsplash.com/photo-1592286927505-2e7e036c8bf6?w=400",
+                Tipo = TipoProducto.Hardware,
+                Categoria = "Smartphones"
+            },
+            new ProductoTecnologico
+            {
+                Id = 10,
+                Nombre = "MacBook Pro 16\" M3",
+                Descripcion = "Laptop profesional con chip M3, 36GB RAM, perfecta para desarrollo y edición de video",
+                PrecioBase = 2499.99m,
+                ImagenUrl = "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400",
+                Tipo = TipoProducto.Hardware,
+                Categoria = "Laptops"
             }
         );
 
@@ -124,7 +145,13 @@ public class TechStoreContext : DbContext
             
             new Especificacion { Id = 13, Nombre = "Visitas on-site incluidas", PrecioAdicional = 199m, ProductoTecnologicoId = 7 },
             
-            new Especificacion { Id = 14, Nombre = "Mantenimiento 1 año incluido", PrecioAdicional = 999m, ProductoTecnologicoId = 8 }
+            new Especificacion { Id = 14, Nombre = "Mantenimiento 1 año incluido", PrecioAdicional = 999m, ProductoTecnologicoId = 8 },
+            
+            new Especificacion { Id = 15, Nombre = "256GB Storage (upgrade)", PrecioAdicional = 100m, ProductoTecnologicoId = 9 },
+            new Especificacion { Id = 16, Nombre = "AppleCare+ 2 años", PrecioAdicional = 199m, ProductoTecnologicoId = 9 },
+            
+            new Especificacion { Id = 17, Nombre = "SSD 1TB (upgrade)", PrecioAdicional = 200m, ProductoTecnologicoId = 10 },
+            new Especificacion { Id = 18, Nombre = "AppleCare+ 3 años", PrecioAdicional = 379m, ProductoTecnologicoId = 10 }
         );
     }
 }

@@ -7,10 +7,23 @@ public class Orden
     public string DireccionEntrega { get; set; } = string.Empty;
     public string NombreCliente { get; set; } = string.Empty;
     public string EmailCliente { get; set; } = string.Empty;
+    public string TelefonoCliente { get; set; } = string.Empty;
+    public EstadoOrden Estado { get; set; } = EstadoOrden.Pendiente;
+    public string? NotasOrden { get; set; }
     public int? UsuarioId { get; set; }
     public Usuario? Usuario { get; set; }
     public List<ItemOrden> Items { get; set; } = new();
     
-    public decimal PrecioTotal =>
-        Items.Sum(i => i.PrecioTotal);
+    public decimal PrecioTotal => Items.Sum(i => i.PrecioTotal * i.Cantidad);
+    public int CantidadItems => Items.Sum(i => i.Cantidad);
+}
+
+public enum EstadoOrden
+{
+    Pendiente,
+    Confirmada,
+    EnProceso,
+    Enviada,
+    Entregada,
+    Cancelada
 }
