@@ -25,6 +25,61 @@ The application features a modern, professional design with a dark theme utilizi
 
 ## Recent Implementation Details (November 2025)
 
+### Sistema de Autenticación Mejorado (24 de Noviembre 2025)
+
+Se ha implementado un sistema de autenticación robusto y profesional con las siguientes mejoras:
+
+#### 1. **Autenticación con Cookies Persistentes**
+- ✅ Sesiones persistentes de 30 días con cookies seguras
+- ✅ HttpOnly y SameSite=Strict para mayor seguridad
+- ✅ Inicialización automática del usuario al cargar la aplicación
+- ✅ Soporte para `AddCascadingAuthenticationState` en Blazor
+
+#### 2. **Validaciones Robustas**
+- ✅ **DataAnnotations** en todos los modelos (Login, Registro, Perfil)
+- ✅ Validación de formato de email
+- ✅ Contraseñas seguras: mínimo 8 caracteres, mayúscula, minúscula y número
+- ✅ Mensajes de error personalizados en español
+- ✅ ValidationSummary para mostrar todos los errores
+
+#### 3. **Seguridad Mejorada**
+- ✅ **BCrypt** con workFactor 12 para hashing de contraseñas
+- ✅ Validación de email con `System.Net.Mail.MailAddress`
+- ✅ Validación de contraseñas seguras (mayúsculas, minúsculas, números)
+- ✅ Emails almacenados en minúsculas para evitar duplicados
+- ✅ Verificación segura de contraseñas con BCrypt.Verify
+
+#### 4. **Diseño Profesional**
+- ✅ Nuevo archivo `auth.css` con estilos dedicados
+- ✅ Gradientes y animaciones suaves
+- ✅ Iconos animados (candado, cohete)
+- ✅ Feedback visual con mensajes de éxito/error animados
+- ✅ Spinner de carga durante procesamiento
+- ✅ Responsive design para móviles
+- ✅ Efectos de hover y transiciones fluidas
+
+#### 5. **Mejoras UX**
+- ✅ Redirección automática si el usuario ya está autenticado
+- ✅ Mensajes de éxito/error con animaciones (slide-in, shake)
+- ✅ Autocomplete habilitado en campos de formulario
+- ✅ Placeholders descriptivos
+- ✅ Indicadores de características del sistema (seguridad, velocidad, etc.)
+
+#### 6. **Páginas Actualizadas**
+- ✅ **Login.razor**: Diseño moderno con validaciones en tiempo real
+- ✅ **Register.razor**: Formulario en dos columnas con hints de contraseña
+- ✅ **Perfil.razor**: Validaciones DataAnnotations con persistencia en BD
+- ✅ **MainLayout.razor**: Inicialización automática del usuario desde cookies
+
+#### 7. **Flujo de Autenticación Completo**
+1. Usuario accede a `/login` o `/register`
+2. Si ya está autenticado, redirige automáticamente a `/`
+3. Completa el formulario con validaciones en tiempo real
+4. Al enviar, el sistema valida en el servidor
+5. Si es exitoso, crea una sesión con cookies persistentes
+6. Redirige al usuario a la página principal
+7. La sesión se mantiene durante 30 días o hasta cerrar sesión
+
 ### 1. Carrito de Compras Mejorado
 El carrito ahora funciona en todo momento:
 - ✅ Puedes agregar productos sin iniciar sesión
