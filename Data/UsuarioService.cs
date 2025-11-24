@@ -1,38 +1,18 @@
 using TechStore.Models;
 using Microsoft.EntityFrameworkCore;
 using BCrypt.Net;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using System.Security.Claims;
 
 namespace TechStore.Data;
 
 public class UsuarioService
 {
     private readonly TechStoreContext _dbContext;
-    private readonly IHttpContextAccessor _httpContextAccessor;
     public Usuario? UsuarioActual { get; set; }
     public event Action? OnChange;
 
-    public UsuarioService(TechStoreContext dbContext, IHttpContextAccessor httpContextAccessor)
+    public UsuarioService(TechStoreContext dbContext)
     {
         _dbContext = dbContext;
-        _httpContextAccessor = httpContextAccessor;
-    }
-
-    public async Task InicializarUsuarioActualAsync()
-    {
-        if (_httpContextAccessor.HttpContext?.User?.Identity?.IsAuthenticated == true)
-        {
-            var emailClaim = _httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.Email)?.Value;
-            if (!string.IsNullOrEmpty(emailClaim))
-            {
-                UsuarioActual = await _dbContext.Usuarios
-                    .Include(u => u.ProductosFavoritos)
-                    .Include(u => u.Ordenes)
-                    .FirstOrDefaultAsync(u => u.Email == emailClaim);
-            }
-        }
     }
 
     public async Task<(bool éxito, string mensaje)> RegistrarAsync(string email, string nombre, string apellido, string contraseña, string contraseñaConfirm)
@@ -77,8 +57,6 @@ public class UsuarioService
         _dbContext.Usuarios.Add(usuario);
         await _dbContext.SaveChangesAsync();
 
-        await IniciarSesionConCookiesAsync(usuario);
-
         UsuarioActual = usuario;
         NotificarCambio();
         return (true, "¡Cuenta creada exitosamente!");
@@ -106,8 +84,6 @@ public class UsuarioService
         usuario.UltimoLogin = DateTime.Now;
         await _dbContext.SaveChangesAsync();
 
-        await IniciarSesionConCookiesAsync(usuario);
-
         UsuarioActual = usuario;
         NotificarCambio();
         return (true, "¡Bienvenido de vuelta!");
@@ -115,38 +91,9 @@ public class UsuarioService
 
     public async Task LogoutAsync()
     {
-        if (_httpContextAccessor.HttpContext != null)
-        {
-            await _httpContextAccessor.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-        }
         UsuarioActual = null;
         NotificarCambio();
-    }
-
-    private async Task IniciarSesionConCookiesAsync(Usuario usuario)
-    {
-        if (_httpContextAccessor.HttpContext == null)
-            return;
-
-        var claims = new List<Claim>
-        {
-            new Claim(ClaimTypes.NameIdentifier, usuario.Id.ToString()),
-            new Claim(ClaimTypes.Email, usuario.Email),
-            new Claim(ClaimTypes.Name, usuario.NombreCompleto),
-            new Claim("AvatarUrl", usuario.AvatarUrl)
-        };
-
-        var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-        var authProperties = new AuthenticationProperties
-        {
-            IsPersistent = true,
-            ExpiresUtc = DateTimeOffset.UtcNow.AddDays(30)
-        };
-
-        await _httpContextAccessor.HttpContext.SignInAsync(
-            CookieAuthenticationDefaults.AuthenticationScheme,
-            new ClaimsPrincipal(claimsIdentity),
-            authProperties);
+        await Task.CompletedTask;
     }
 
     private bool EsEmailValido(string email)

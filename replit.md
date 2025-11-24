@@ -29,11 +29,11 @@ The application features a modern, professional design with a dark theme utilizi
 
 Se ha implementado un sistema de autenticación robusto y profesional con las siguientes mejoras:
 
-#### 1. **Autenticación con Cookies Persistentes**
-- ✅ Sesiones persistentes de 30 días con cookies seguras
-- ✅ HttpOnly y SameSite=Strict para mayor seguridad
-- ✅ Inicialización automática del usuario al cargar la aplicación
-- ✅ Soporte para `AddCascadingAuthenticationState` en Blazor
+#### 1. **Autenticación Basada en Estado del Servidor**
+- ✅ Sistema de autenticación compatible con Blazor Server
+- ✅ Gestión de estado del usuario en el servidor durante la sesión activa
+- ✅ Sin dependencia de cookies HTTP (compatible con componentes interactivos de Blazor)
+- ✅ Estado persistente durante la conexión WebSocket de Blazor
 
 #### 2. **Validaciones Robustas**
 - ✅ **DataAnnotations** en todos los modelos (Login, Registro, Perfil)
@@ -75,10 +75,10 @@ Se ha implementado un sistema de autenticación robusto y profesional con las si
 1. Usuario accede a `/login` o `/register`
 2. Si ya está autenticado, redirige automáticamente a `/`
 3. Completa el formulario con validaciones en tiempo real
-4. Al enviar, el sistema valida en el servidor
-5. Si es exitoso, crea una sesión con cookies persistentes
+4. Al enviar, el sistema valida en el servidor (BCrypt para contraseñas)
+5. Si es exitoso, almacena el estado del usuario en el servidor
 6. Redirige al usuario a la página principal
-7. La sesión se mantiene durante 30 días o hasta cerrar sesión
+7. La sesión se mantiene activa durante la conexión de Blazor Server
 
 ### 1. Carrito de Compras Mejorado
 El carrito ahora funciona en todo momento:
