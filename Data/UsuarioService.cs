@@ -192,7 +192,7 @@ public class UsuarioService
 
     private string HashContraseña(string contraseña)
     {
-        return BCrypt.Net.BCrypt.HashPassword(contraseña, BCrypt.Net.BCrypt.GenerateSalt());
+        return BCrypt.Net.BCrypt.HashPassword(contraseña, workFactor: 12);
     }
 
     private bool VerificaContraseña(string contraseña, string hash)
